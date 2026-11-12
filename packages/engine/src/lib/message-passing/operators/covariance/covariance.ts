@@ -336,7 +336,7 @@ function rowMessage(y: ArrayLike<number>, d: number): Eta {
  * mvnNormalWishart.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.length // => 8
  * ```
  */
-export const mvnNormalWishart: FactorOperator = {
+export const mvnNormalWishart: FactorOperator = defineOperator({
   name: 'mvn-normal-wishart',
   description: 'x ~ N(mu, L^-1) for an observed vector x and a normal-Wishart variable (mu, L)',
   ports: [
@@ -344,31 +344,34 @@ export const mvnNormalWishart: FactorOperator = {
     { name: 'theta', accepts: ['normal-wishart'] },
   ],
   params: {},
-  support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (_params, families) =>
     families[0]?.dim === families[1]?.dim
       ? undefined
       : 'mvn-normal-wishart: the vector and the matrix have one dimension',
-  ep: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  vmp: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  bp: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  logEvidence: (c) => {
-    const d = arg(c, 1).family.dim
-    const a = arg(c, 1)
-    const f = normalWishart(d)
-    return f.logPartition(rawSum(a.eta as Eta, rowMessage(vectorOf(arg(c, 0)), d))) - 0.5 * d * LOG_2PI
+  rules: {
+    ep: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
+    vmp: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
+    bp: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
   },
-  expectedLog: (c) => {
-    const d = arg(c, 1).family.dim
-    const y = vectorOf(arg(c, 0))
-    const mo = arg(c, 1).family.moments(arg(c, 1).eta as Eta)
-    // E[0.5 log |L| - 0.5 (y - mu)' L (y - mu)] - (d / 2) log 2 pi
-    let quad = 0
-    for (let i = 0; i < d; i++) {
-      for (let j = 0; j < d; j++) quad += (y[i] as number) * (mo[1 + i * d + j] as number) * (y[j] as number)
-      quad -= 2 * (y[i] as number) * (mo[1 + d * d + i] as number)
-    }
-    quad += mo[1 + d * d + d] as number
-    return 0.5 * (mo[0] as number) - 0.5 * d * LOG_2PI - 0.5 * quad
+  evidence: {
+    ep: (c) => {
+      const d = arg(c, 1).family.dim
+      const a = arg(c, 1)
+      const f = normalWishart(d)
+      return f.logPartition(rawSum(a.eta as Eta, rowMessage(vectorOf(arg(c, 0)), d))) - 0.5 * d * LOG_2PI
+    },
+    vmp: (c) => {
+      const d = arg(c, 1).family.dim
+      const y = vectorOf(arg(c, 0))
+      const mo = arg(c, 1).family.moments(arg(c, 1).eta as Eta)
+      // E[0.5 log |L| - 0.5 (y - mu)' L (y - mu)] - (d / 2) log 2 pi
+      let quad = 0
+      for (let i = 0; i < d; i++) {
+        for (let j = 0; j < d; j++) quad += (y[i] as number) * (mo[1 + i * d + j] as number) * (y[j] as number)
+        quad -= 2 * (y[i] as number) * (mo[1 + d * d + i] as number)
+      }
+      quad += mo[1 + d * d + d] as number
+      return 0.5 * (mo[0] as number) - 0.5 * d * LOG_2PI - 0.5 * quad
+    },
   },
-}
+})

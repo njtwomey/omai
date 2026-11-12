@@ -8,6 +8,7 @@
 
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, massOf, numberParam, rawSum, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { bernoulli, beta } from '../../core/families.ts'
 import { dirichlet, discreteEta, discreteProbs } from '../../core/families-vector.ts'
 import { param } from '../../core/params.ts'
@@ -36,7 +37,7 @@ function trueProbability(a: Arg): number {
  * bernoulliBeta.vmp?.({ mode: 'vmp', to: 1, args, params: {}, power: 1 }).message // => [1, 0]
  * ```
  */
-export const bernoulliBeta: FactorOperator = {
+export const bernoulliBeta: FactorOperator = defineOperator({
   name: 'bernoulli',
   description: 'b ~ Bernoulli(p) with p ~ Beta',
   ports: [
@@ -44,52 +45,55 @@ export const bernoulliBeta: FactorOperator = {
     { name: 'p', accepts: ['beta'] },
   ],
   params: {},
-  support: { ep: 'exact', vmp: 'exact' },
-  readsTarget: (to) => to === 1,
-  ep: (c): OperatorResult => {
-    const pArg = arg(c, 1)
-    const eta = etaOf(pArg)
-    const a = (eta[0] ?? 0) + 1
-    const b = (eta[1] ?? 0) + 1
-    if (c.to === 0) {
-      const mean = a / (a + b)
-      return { message: [Math.log(mean) - Math.log1p(-mean)] }
-    }
-    const pi = trueProbability(arg(c, 0))
-    if (pi === 1) return { message: [1, 0] }
-    if (pi === 0) return { message: [0, 1] }
-    const w1 = (pi * a) / (a + b)
-    const w0 = ((1 - pi) * b) / (a + b)
-    const m1 = beta.moments([a, b - 1])
-    const m0 = beta.moments([a - 1, b])
-    const total = w0 + w1
-    const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
-    return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const pArg = arg(c, 1)
+      const eta = etaOf(pArg)
+      const a = (eta[0] ?? 0) + 1
+      const b = (eta[1] ?? 0) + 1
+      if (c.to === 0) {
+        const mean = a / (a + b)
+        return { message: [Math.log(mean) - Math.log1p(-mean)] }
+      }
+      const pi = trueProbability(arg(c, 0))
+      if (pi === 1) return { message: [1, 0] }
+      if (pi === 0) return { message: [0, 1] }
+      const w1 = (pi * a) / (a + b)
+      const w0 = ((1 - pi) * b) / (a + b)
+      const m1 = beta.moments([a, b - 1])
+      const m0 = beta.moments([a - 1, b])
+      const total = w0 + w1
+      const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
+      return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const pArg = arg(c, 1)
+      if (c.to === 0) {
+        const mo = beta.moments(etaOf(pArg))
+        return { message: [(mo[0] ?? 0) - (mo[1] ?? 0)] }
+      }
+      const pi = trueProbability(arg(c, 0))
+      return { message: [pi, 1 - pi] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const pArg = arg(c, 1)
-    if (c.to === 0) {
-      const mo = beta.moments(etaOf(pArg))
-      return { message: [(mo[0] ?? 0) - (mo[1] ?? 0)] }
-    }
-    const pi = trueProbability(arg(c, 0))
-    return { message: [pi, 1 - pi] }
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const eta = etaOf(arg(c, 1))
+      const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
+      const b = arg(c, 0)
+      if (b.value !== undefined) return massOf(arg(c, 1)) + Math.log(scalarOf(b) > 0 ? mean : 1 - mean)
+      const pi = trueProbability(b)
+      return massOf(arg(c, 1)) + massOf(b) + Math.log((1 - pi) * (1 - mean) + pi * mean)
+    },
+    vmp: (c) => {
+      const mo = beta.moments(etaOf(arg(c, 1)))
+      const pi = trueProbability(arg(c, 0))
+      return pi * (mo[0] ?? 0) + (1 - pi) * (mo[1] ?? 0)
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const eta = etaOf(arg(c, 1))
-    const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
-    const b = arg(c, 0)
-    if (b.value !== undefined) return massOf(arg(c, 1)) + Math.log(scalarOf(b) > 0 ? mean : 1 - mean)
-    const pi = trueProbability(b)
-    return massOf(arg(c, 1)) + massOf(b) + Math.log((1 - pi) * (1 - mean) + pi * mean)
-  },
-  expectedLog: (c) => {
-    const mo = beta.moments(etaOf(arg(c, 1)))
-    const pi = trueProbability(arg(c, 0))
-    return pi * (mo[0] ?? 0) + (1 - pi) * (mo[1] ?? 0)
-  },
-}
+  traits: { readsTarget: (to) => to === 1 },
+})
 
 /** The probabilities of a discrete argument: its message's, or the indicator of its observed state. */
 function stateProbabilities(a: Arg, k: number): number[] {
@@ -116,7 +120,7 @@ function stateProbabilities(a: Arg, k: number): number[] {
  * discreteDirichlet.vmp?.({ mode: 'vmp', to: 1, args, params: {}, power: 1 }).message // => [0.2, 0.3, 0.5]
  * ```
  */
-export const discreteDirichlet: FactorOperator = {
+export const discreteDirichlet: FactorOperator = defineOperator({
   name: 'discrete',
   description: 'z ~ Discrete(pi) with pi ~ Dirichlet',
   ports: [
@@ -124,54 +128,57 @@ export const discreteDirichlet: FactorOperator = {
     { name: 'pi', accepts: ['dirichlet'] },
   ],
   params: {},
-  support: { ep: 'exact', vmp: 'exact' },
-  readsTarget: (to) => to === 1,
-  ep: (c): OperatorResult => {
-    const piArg = arg(c, 1)
-    const eta = etaOf(piArg)
-    const k = eta.length
-    const alpha = eta.map((v) => v + 1)
-    const total = alpha.reduce((a, b) => a + b, 0)
-    if (c.to === 0) return { message: discreteEta(alpha.map((a) => a / total)) }
-    const q = stateProbabilities(arg(c, 0), k)
-    const family = dirichlet(k)
-    if (q.some((v) => v === 1)) {
-      const out = new Array<number>(k).fill(0)
-      out[q.indexOf(1)] = 1
-      return { message: out }
-    }
-    const weights = q.map((v, i) => v * (alpha[i] ?? 0))
-    const norm = weights.reduce((a, b) => a + b, 0)
-    const mixed = new Array<number>(k).fill(0)
-    for (let i = 0; i < k; i++) {
-      if ((weights[i] ?? 0) === 0) continue
-      const comp = family.moments(eta.map((v, j) => (j === i ? v + 1 : v)))
-      for (let j = 0; j < k; j++) mixed[j] = (mixed[j] ?? 0) + ((weights[i] ?? 0) / norm) * (comp[j] ?? 0)
-    }
-    return { message: family.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const piArg = arg(c, 1)
+      const eta = etaOf(piArg)
+      const k = eta.length
+      const alpha = eta.map((v) => v + 1)
+      const total = alpha.reduce((a, b) => a + b, 0)
+      if (c.to === 0) return { message: discreteEta(alpha.map((a) => a / total)) }
+      const q = stateProbabilities(arg(c, 0), k)
+      const family = dirichlet(k)
+      if (q.some((v) => v === 1)) {
+        const out = new Array<number>(k).fill(0)
+        out[q.indexOf(1)] = 1
+        return { message: out }
+      }
+      const weights = q.map((v, i) => v * (alpha[i] ?? 0))
+      const norm = weights.reduce((a, b) => a + b, 0)
+      const mixed = new Array<number>(k).fill(0)
+      for (let i = 0; i < k; i++) {
+        if ((weights[i] ?? 0) === 0) continue
+        const comp = family.moments(eta.map((v, j) => (j === i ? v + 1 : v)))
+        for (let j = 0; j < k; j++) mixed[j] = (mixed[j] ?? 0) + ((weights[i] ?? 0) / norm) * (comp[j] ?? 0)
+      }
+      return { message: family.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const piArg = arg(c, 1)
+      const eta = etaOf(piArg)
+      if (c.to === 0) return { message: dirichlet(eta.length).moments(eta) }
+      return { message: stateProbabilities(arg(c, 0), eta.length) }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const piArg = arg(c, 1)
-    const eta = etaOf(piArg)
-    if (c.to === 0) return { message: dirichlet(eta.length).moments(eta) }
-    return { message: stateProbabilities(arg(c, 0), eta.length) }
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const eta = etaOf(arg(c, 1))
+      const alpha = eta.map((v) => v + 1)
+      const total = alpha.reduce((a, b) => a + b, 0)
+      const q = stateProbabilities(arg(c, 0), eta.length)
+      const mean = q.reduce((s, v, i) => s + v * ((alpha[i] ?? 0) / total), 0)
+      return massOf(arg(c, 1)) + massOf(arg(c, 0)) + Math.log(mean)
+    },
+    vmp: (c) => {
+      const eta = etaOf(arg(c, 1))
+      const mo = dirichlet(eta.length).moments(eta)
+      const q = stateProbabilities(arg(c, 0), eta.length)
+      return q.reduce((s, v, i) => (v > 0 ? s + v * (mo[i] ?? 0) : s), 0)
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const eta = etaOf(arg(c, 1))
-    const alpha = eta.map((v) => v + 1)
-    const total = alpha.reduce((a, b) => a + b, 0)
-    const q = stateProbabilities(arg(c, 0), eta.length)
-    const mean = q.reduce((s, v, i) => s + v * ((alpha[i] ?? 0) / total), 0)
-    return massOf(arg(c, 1)) + massOf(arg(c, 0)) + Math.log(mean)
-  },
-  expectedLog: (c) => {
-    const eta = etaOf(arg(c, 1))
-    const mo = dirichlet(eta.length).moments(eta)
-    const q = stateProbabilities(arg(c, 0), eta.length)
-    return q.reduce((s, v, i) => (v > 0 ? s + v * (mo[i] ?? 0) : s), 0)
-  },
-}
+  traits: { readsTarget: (to) => to === 1 },
+})
 
 /**
  * n ~ Poisson(exposure * rate) for an observed count n and a gamma-distributed rate: the message to the rate is the
@@ -186,7 +193,7 @@ export const discreteDirichlet: FactorOperator = {
  * poisson.ep?.({ mode: 'ep', to: 1, args, params: { exposure: 2 }, power: 1 }).message // => [4, -2]
  * ```
  */
-export const poisson: FactorOperator = {
+export const poisson: FactorOperator = defineOperator({
   name: 'poisson',
   description: 'n ~ Poisson(exposure * rate), n observed, rate ~ Gamma',
   ports: [
@@ -194,22 +201,25 @@ export const poisson: FactorOperator = {
     { name: 'rate', accepts: ['gamma'] },
   ],
   params: { exposure: param.positive({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] }),
-  vmp: (c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] }),
-  logEvidence: (c) => {
-    const n = scalarOf(arg(c, 0))
-    const e = numberParam(c.params, 'exposure', 1)
-    const gammaFamily = arg(c, 1).family
-    return n * Math.log(e) - lgammaOf(n + 1) + gammaFamily.logPartition(rawSum(etaOf(arg(c, 1)), [n, -e]))
+  rules: {
+    ep: messageRule((c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] })),
+    vmp: messageRule((c) => ({ message: [scalarOf(arg(c, 0)), -numberParam(c.params, 'exposure', 1)] })),
   },
-  expectedLog: (c) => {
-    const n = scalarOf(arg(c, 0))
-    const e = numberParam(c.params, 'exposure', 1)
-    const mo = arg(c, 1).family.moments(etaOf(arg(c, 1)))
-    return n * (Math.log(e) + (mo[0] ?? 0)) - e * (mo[1] ?? 0) - lgammaOf(n + 1)
+  evidence: {
+    ep: (c) => {
+      const n = scalarOf(arg(c, 0))
+      const e = numberParam(c.params, 'exposure', 1)
+      const gammaFamily = arg(c, 1).family
+      return n * Math.log(e) - lgammaOf(n + 1) + gammaFamily.logPartition(rawSum(etaOf(arg(c, 1)), [n, -e]))
+    },
+    vmp: (c) => {
+      const n = scalarOf(arg(c, 0))
+      const e = numberParam(c.params, 'exposure', 1)
+      const mo = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+      return n * (Math.log(e) + (mo[0] ?? 0)) - e * (mo[1] ?? 0) - lgammaOf(n + 1)
+    },
   },
-}
+})
 
 /**
  * k ~ Binomial(n, p) for an observed count k and a beta-distributed probability p (`n` in the parameters): the message
@@ -224,7 +234,7 @@ export const poisson: FactorOperator = {
  * binomial.ep?.({ mode: 'ep', to: 1, args, params: { n: 10 }, power: 1 }).message // => [3, 7]
  * ```
  */
-export const binomial: FactorOperator = {
+export const binomial: FactorOperator = defineOperator({
   name: 'binomial',
   description: 'k ~ Binomial(n, p), k observed, p ~ Beta',
   ports: [
@@ -232,22 +242,25 @@ export const binomial: FactorOperator = {
     { name: 'p', accepts: ['beta'] },
   ],
   params: { n: param.integer({ min: 0 }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] }),
-  vmp: (c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] }),
-  logEvidence: (c) => {
-    const n = numberParam(c.params, 'n')
-    const k = scalarOf(arg(c, 0))
-    const logChoose = lgammaOf(n + 1) - lgammaOf(k + 1) - lgammaOf(n - k + 1)
-    return logChoose + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [k, n - k]))
+  rules: {
+    ep: messageRule((c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] })),
+    vmp: messageRule((c) => ({ message: [scalarOf(arg(c, 0)), numberParam(c.params, 'n') - scalarOf(arg(c, 0))] })),
   },
-  expectedLog: (c) => {
-    const n = numberParam(c.params, 'n')
-    const k = scalarOf(arg(c, 0))
-    const mo = beta.moments(etaOf(arg(c, 1)))
-    return lgammaOf(n + 1) - lgammaOf(k + 1) - lgammaOf(n - k + 1) + k * (mo[0] ?? 0) + (n - k) * (mo[1] ?? 0)
+  evidence: {
+    ep: (c) => {
+      const n = numberParam(c.params, 'n')
+      const k = scalarOf(arg(c, 0))
+      const logChoose = lgammaOf(n + 1) - lgammaOf(k + 1) - lgammaOf(n - k + 1)
+      return logChoose + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [k, n - k]))
+    },
+    vmp: (c) => {
+      const n = numberParam(c.params, 'n')
+      const k = scalarOf(arg(c, 0))
+      const mo = beta.moments(etaOf(arg(c, 1)))
+      return lgammaOf(n + 1) - lgammaOf(k + 1) - lgammaOf(n - k + 1) + k * (mo[0] ?? 0) + (n - k) * (mo[1] ?? 0)
+    },
   },
-}
+})
 
 /**
  * x ~ Gamma(shape, c r) for an observed positive value x and a gamma-distributed rate r (the `shape` and the multiple `c`, as `scale`, in the
@@ -263,7 +276,7 @@ export const binomial: FactorOperator = {
  * gammaObserved.ep?.({ mode: 'ep', to: 1, args, params: { shape: 1 }, power: 1 }).message // => [1, -0.8]
  * ```
  */
-export const gammaObserved: FactorOperator = {
+export const gammaObserved: FactorOperator = defineOperator({
   name: 'gamma-observed',
   description: 'x ~ Gamma(shape, c r), x observed, r ~ Gamma (exponential when shape = 1)',
   ports: [
@@ -271,28 +284,31 @@ export const gammaObserved: FactorOperator = {
     { name: 'r', accepts: ['gamma'] },
   ],
   params: { shape: param.positive({ optional: true }), scale: param.positive({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c) => ({
-    message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
-  }),
-  vmp: (c) => ({
-    message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
-  }),
-  logEvidence: (c) => {
-    const k = numberParam(c.params, 'shape', 1)
-    const s = numberParam(c.params, 'scale', 1)
-    const x = scalarOf(arg(c, 0))
-    const constant = k * Math.log(s) + (k - 1) * Math.log(x) - lgammaOf(k)
-    return constant + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [k, -s * x]))
+  rules: {
+    ep: messageRule((c) => ({
+      message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
+    })),
+    vmp: messageRule((c) => ({
+      message: [numberParam(c.params, 'shape', 1), -numberParam(c.params, 'scale', 1) * scalarOf(arg(c, 0))],
+    })),
   },
-  expectedLog: (c) => {
-    const k = numberParam(c.params, 'shape', 1)
-    const s = numberParam(c.params, 'scale', 1)
-    const x = scalarOf(arg(c, 0))
-    const mo = arg(c, 1).family.moments(etaOf(arg(c, 1)))
-    return k * (Math.log(s) + (mo[0] ?? 0)) + (k - 1) * Math.log(x) - s * x * (mo[1] ?? 0) - lgammaOf(k)
+  evidence: {
+    ep: (c) => {
+      const k = numberParam(c.params, 'shape', 1)
+      const s = numberParam(c.params, 'scale', 1)
+      const x = scalarOf(arg(c, 0))
+      const constant = k * Math.log(s) + (k - 1) * Math.log(x) - lgammaOf(k)
+      return constant + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [k, -s * x]))
+    },
+    vmp: (c) => {
+      const k = numberParam(c.params, 'shape', 1)
+      const s = numberParam(c.params, 'scale', 1)
+      const x = scalarOf(arg(c, 0))
+      const mo = arg(c, 1).family.moments(etaOf(arg(c, 1)))
+      return k * (Math.log(s) + (mo[0] ?? 0)) + (k - 1) * Math.log(x) - s * x * (mo[1] ?? 0) - lgammaOf(k)
+    },
   },
-}
+})
 
 /**
  * k ~ NegativeBinomial(r, p) for an observed number of failures k before the `r`-th success (`successes` in the parameters,
@@ -308,7 +324,7 @@ export const gammaObserved: FactorOperator = {
  * negativeBinomialBeta.ep?.({ mode: 'ep', to: 1, args, params: { successes: 1 }, power: 1 }).message // => [1, 4]
  * ```
  */
-export const negativeBinomialBeta: FactorOperator = {
+export const negativeBinomialBeta: FactorOperator = defineOperator({
   name: 'negative-binomial-beta',
   description:
     'k ~ NegativeBinomial(r, p) failures before the r-th success, k observed, p ~ Beta (geometric when r = 1)',
@@ -317,22 +333,25 @@ export const negativeBinomialBeta: FactorOperator = {
     { name: 'p', accepts: ['beta'] },
   ],
   params: { successes: param.positive({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
-  vmp: (c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] }),
-  logEvidence: (c) => {
-    const r = numberParam(c.params, 'successes', 1)
-    const k = scalarOf(arg(c, 0))
-    const logChoose = lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r)
-    return logChoose + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [r, k]))
+  rules: {
+    ep: messageRule((c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] })),
+    vmp: messageRule((c) => ({ message: [numberParam(c.params, 'successes', 1), scalarOf(arg(c, 0))] })),
   },
-  expectedLog: (c) => {
-    const r = numberParam(c.params, 'successes', 1)
-    const k = scalarOf(arg(c, 0))
-    const mo = beta.moments(etaOf(arg(c, 1)))
-    return lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r) + r * (mo[0] ?? 0) + k * (mo[1] ?? 0)
+  evidence: {
+    ep: (c) => {
+      const r = numberParam(c.params, 'successes', 1)
+      const k = scalarOf(arg(c, 0))
+      const logChoose = lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r)
+      return logChoose + arg(c, 1).family.logPartition(rawSum(etaOf(arg(c, 1)), [r, k]))
+    },
+    vmp: (c) => {
+      const r = numberParam(c.params, 'successes', 1)
+      const k = scalarOf(arg(c, 0))
+      const mo = beta.moments(etaOf(arg(c, 1)))
+      return lgammaOf(k + r) - lgammaOf(k + 1) - lgammaOf(r) + r * (mo[0] ?? 0) + k * (mo[1] ?? 0)
+    },
   },
-}
+})
 
 /** log(l1 p + l0 (1 - p)) at the coordinate p. */
 const mixtureWeightLog =
@@ -356,35 +375,41 @@ const mixtureWeightLog =
  * mixtureWeight.ep?.({ mode: 'ep', to: 0, args, params: { l1: 3, l0: 1 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.543', '0.082']
  * ```
  */
-export const mixtureWeight: FactorOperator = {
+export const mixtureWeight: FactorOperator = defineOperator({
   name: 'mixture-weight',
   description: 'f(p) = l1 p + l0 (1 - p): an observation of a two-component mixture with a beta weight',
   ports: [{ name: 'p', accepts: ['beta'] }],
   params: { l1: param.nonNegative(), l0: param.nonNegative() },
-  support: { ep: 'exact', vmp: 'numeric' },
-  readsTarget: () => true,
-  // The mean field of the switch summed out: the expected log of `l1 p + l0 (1 - p)` is not linear in the beta's statistics, so the
-  // message is the non-conjugate one (the explicit switch `z ~ Bernoulli(p)` with a gate has exact messages and a different bound).
-  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureWeightLog(c)) }),
-  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureWeightLog(c)),
-  ep: (c): OperatorResult => {
-    const eta = etaOf(arg(c, 0))
-    const a = (eta[0] ?? 0) + 1
-    const b = (eta[1] ?? 0) + 1
-    const l1 = numberParam(c.params, 'l1')
-    const l0 = numberParam(c.params, 'l0')
-    const w1 = (l1 * a) / (a + b)
-    const w0 = (l0 * b) / (a + b)
-    const m1 = beta.moments([a, b - 1])
-    const m0 = beta.moments([a - 1, b])
-    const total = w0 + w1
-    const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
-    return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const eta = etaOf(arg(c, 0))
+      const a = (eta[0] ?? 0) + 1
+      const b = (eta[1] ?? 0) + 1
+      const l1 = numberParam(c.params, 'l1')
+      const l0 = numberParam(c.params, 'l0')
+      const w1 = (l1 * a) / (a + b)
+      const w0 = (l0 * b) / (a + b)
+      const m1 = beta.moments([a, b - 1])
+      const m0 = beta.moments([a - 1, b])
+      const total = w0 + w1
+      const mixed = m1.map((v, i) => (w1 * v + w0 * (m0[i] ?? 0)) / total)
+      return { message: beta.fromMoments(mixed).map((v, i) => v - (eta[i] ?? 0)) }
+    }),
+    // The mean field of the switch summed out: the expected log of `l1 p + l0 (1 - p)` is not linear in the beta's statistics, so the
+    // message is the non-conjugate one (the explicit switch `z ~ Bernoulli(p)` with a gate has exact messages and a different bound).
+    vmp: messageRule(
+      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), 0, mixtureWeightLog(c)) }),
+      'numeric',
+    ),
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const eta = etaOf(arg(c, 0))
-    const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
-    return massOf(arg(c, 0)) + Math.log(numberParam(c.params, 'l1') * mean + numberParam(c.params, 'l0') * (1 - mean))
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const eta = etaOf(arg(c, 0))
+      const mean = ((eta[0] ?? 0) + 1) / ((eta[0] ?? 0) + (eta[1] ?? 0) + 2)
+      return massOf(arg(c, 0)) + Math.log(numberParam(c.params, 'l1') * mean + numberParam(c.params, 'l0') * (1 - mean))
+    },
+    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), mixtureWeightLog(c)),
   },
-}
+  traits: { readsTarget: () => true },
+})

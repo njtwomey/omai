@@ -238,8 +238,8 @@ export interface TiltedMoments {
  * is compiled against the collection it is given.
  *
  * What each optional member is for, and why it stays (the contract trim, `docs/probprog/review-rules.md` section 1):
- * - `support`: derived by `defineOperator` from the kinds of the rules, so it is declared by hand only on an operator written as a
- *   literal. Read by the registry test, `ep-report`, the digest, the lifts (a row or plate has its link's) and by `gate`, whose
+ * - `support`: derived by `defineOperator` from the kinds of the rules (every operator of the library is built with it), so it is
+ *   declared by hand only on an operator of your own written as a literal. Read by the registry test, `ep-report`, the digest, the lifts (a row or plate has its link's) and by `gate`, whose
  *   `powerable` takes a branch to a power only when its EP rule is `exact` and does not read the target.
  * - `readsTarget`, `power` and `ports` are a flag or a function by design (`readsTargetOf`, `takesPower`, `portsOf` are the readers: use
  *   them, never test the type). One form of declaration would move the digest's registry section and some sixty declarations for nothing a

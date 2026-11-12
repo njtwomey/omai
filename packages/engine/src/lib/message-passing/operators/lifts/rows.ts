@@ -9,6 +9,7 @@
 
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, messageArg, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ParameterError } from '../../core/errors.ts'
 import { gaussian, gaussianEta } from '../../core/families.ts'
 import { gaussianMv, gaussianMvMoments } from '../../core/families-vector.ts'
@@ -69,7 +70,16 @@ export function glmRow(name: string, link: FactorOperator, description: string):
   }
   const linkArgs = (c: OperatorContext, z: Arg): Arg[] => (outcome ? [arg(c, 0), z] : [z])
   const declared = mergeParams({ a: param.vector() }, link.params)
-  return {
+  const rankOne = (site: Eta, a: readonly number[]): Eta => {
+    const nu = site[0] ?? 0
+    const lambda = site[1] ?? 0
+    const d = a.length
+    return [
+      ...a.map((x) => nu * x),
+      ...Array.from({ length: d * d }, (_, k) => lambda * (a[Math.floor(k / d)] ?? 0) * (a[k % d] ?? 0)),
+    ]
+  }
+  return defineOperator({
     name,
     description,
     ...(declared === undefined ? {} : { params: declared }),
@@ -77,63 +87,46 @@ export function glmRow(name: string, link: FactorOperator, description: string):
       ...(outcome ? [{ name: 'y', accepts: ['bernoulli' as const], constant: true, observed: true }] : []),
       { name: 'w', accepts: ['gaussian-mv' as const] },
     ],
-    support: {
-      ep: link.support.ep ?? 'numeric',
-      ...(link.vmp === undefined ? {} : { vmp: link.support.vmp ?? 'exact' }),
-    },
-    ...(link.noRule === undefined ? {} : { noRule: link.noRule }),
-    readsTarget: (to) => to === w,
-    ...(link.power === true ? { power: true } : {}),
     check: (params, families) =>
       vectorParam(params, 'a').length === families[w]?.dim ? undefined : `${name}: a must have the length of w`,
-    ep: (c): OperatorResult => {
-      if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
-      const { z, a } = lift(c)
-      const site = ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message
-      const nu = site[0] ?? 0
-      const lambda = site[1] ?? 0
-      const d = a.length
-      const message: Eta = [
-        ...a.map((x) => nu * x),
-        ...Array.from({ length: d * d }, (_, k) => lambda * (a[Math.floor(k / d)] ?? 0) * (a[k % d] ?? 0)),
-      ]
-      return { message }
+    // The row says what its link says: the kind of each rule is the link's, and so is why a rule is missing.
+    rules: {
+      ep: messageRule((c): OperatorResult => {
+        if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
+        const { z, a } = lift(c)
+        return { message: rankOne(ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message, a) }
+      }, link.support.ep ?? 'numeric'),
+      // The mean field: the link's variational message to the predictor under its belief (the Gaussian of a . w under the belief of
+      // the weights), put back on the weights as a rank-one natural parameter.
+      ...(link.vmp === undefined
+        ? {}
+        : {
+            vmp: messageRule((c: OperatorContext): OperatorResult => {
+              if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
+              const { z, a } = lift(c)
+              return { message: rankOne(ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message, a) }
+            }, link.support.vmp ?? 'exact'),
+          }),
     },
-    // The mean field: the link's variational message to the predictor under its belief (the Gaussian of a . w under the belief of
-    // the weights), put back on the weights as a rank-one natural parameter.
-    ...(link.vmp === undefined
-      ? {}
-      : {
-          vmp: (c: OperatorContext): OperatorResult => {
-            if (c.to !== w) throw new ParameterError(`${name}: nothing is sent to the observed outcome`)
-            const { z, a } = lift(c)
-            const site = ruleMessage(link, { ...c, to: w, args: linkArgs(c, z) }).message
-            const nu = site[0] ?? 0
-            const lambda = site[1] ?? 0
-            const d = a.length
-            return {
-              message: [
-                ...a.map((x) => nu * x),
-                ...Array.from({ length: d * d }, (_, k) => lambda * (a[Math.floor(k / d)] ?? 0) * (a[k % d] ?? 0)),
-              ],
-            }
-          },
-        }),
-    ...(link.expectedLog === undefined
-      ? {}
-      : {
-          expectedLog: (c: OperatorContext): number =>
-            (link.expectedLog as NonNullable<FactorOperator['expectedLog']>)({ ...c, args: linkArgs(c, lift(c).z) }),
-        }),
-    logEvidence: (c) => {
-      if (!allProper(c.args) || link.logEvidence === undefined) return Number.NaN
-      const { z, a } = lift(c)
-      const mv = gaussianMv(a.length)
-      // The link's value counts the mass of the predictor's message (a normalised Gaussian here); the weights' own mass replaces it.
-      const normalised = gaussian.logPartition(etaOf(z))
-      return link.logEvidence({ ...c, args: linkArgs(c, z) }) - normalised + mv.logPartition(etaOf(arg(c, w)))
+    evidence: {
+      ep: (c) => {
+        if (!allProper(c.args) || link.logEvidence === undefined) return Number.NaN
+        const { z, a } = lift(c)
+        const mv = gaussianMv(a.length)
+        // The link's value counts the mass of the predictor's message (a normalised Gaussian here); the weights' own mass replaces it.
+        const normalised = gaussian.logPartition(etaOf(z))
+        return link.logEvidence({ ...c, args: linkArgs(c, z) }) - normalised + mv.logPartition(etaOf(arg(c, w)))
+      },
+      ...(link.expectedLog === undefined
+        ? {}
+        : {
+            vmp: (c: OperatorContext): number =>
+              (link.expectedLog as NonNullable<FactorOperator['expectedLog']>)({ ...c, args: linkArgs(c, lift(c).z) }),
+          }),
     },
-  }
+    traits: { readsTarget: (to) => to === w, ...(link.power === true ? { power: true as const } : {}) },
+    ...(link.noRule === undefined ? {} : { noRule: link.noRule }),
+  })
 }
 
 /**

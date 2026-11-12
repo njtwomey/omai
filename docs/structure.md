@@ -3970,7 +3970,7 @@ variable is its name, a factor its `id` (`factor:<site>` from the spec compiler)
   alone; `FactorOperator.unsupported` names a factor with no variational message because of its parameters, the Weibull shape).
   An operator is built with `defineOperator` (`core/define.ts`): rules as `siteRule(tilt)` (the tilted distribution at the target port:
   the engine's `projectSite` projects it, divides by the cavity and, for an operator that takes a power, by the power) or
-  `messageRule(fn)` (a closed form the operator computes), the evidence, the traits; `support` is derived from the kinds of the rules.
+  `messageRule(fn)` (a closed form the operator computes) or `tiltedRule(fn)` (the tilted moments and mass, projected by `ruleMessage`), the evidence, the traits; `support` is derived from the kinds of the rules, and every operator of the library is built this way.
   `ruleMessage` (`engine/dispatch.ts`) is the one place a rule is chosen (the hook of the mode, else the projected `tilted`), shared by
   the engine's dispatch and by the gate and the lifts, which run inner operators. `gaussian-gamma-precision` takes a `scale` and an
   `offset` for the precision `scale lambda + offset`. A factor spec may carry `start` messages (a vague Gaussian on a port, replaced by

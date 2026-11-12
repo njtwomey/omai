@@ -25,6 +25,7 @@ import type {
   Params,
   Port,
   Support,
+  TiltedMoments,
 } from './types.ts'
 
 /**
@@ -53,6 +54,25 @@ export interface SiteRule {
   readonly kind: 'site'
   readonly tilt: (c: OperatorContext) => Tilt
   readonly support: Support
+}
+
+/**
+ * A rule given as the tilted moments and mass of the factor against the cavities: the engine projects them (`ruleMessage`, which
+ * calls `projectSite`) when no `ep` hook exists, so the operator has a `tilted` member and no `ep` one. Always `numeric`.
+ */
+export interface TiltedRuleDeclaration {
+  readonly kind: 'tilted'
+  readonly tilted: (c: OperatorContext) => TiltedMoments
+}
+
+/**
+ * A rule that is the factor's tilted moments and mass, projected by the engine.
+ *
+ * @param tilted - The moments of the tilted distribution at port `c.to` and its log mass.
+ * @returns The rule.
+ */
+export function tiltedRule(tilted: (c: OperatorContext) => TiltedMoments): TiltedRuleDeclaration {
+  return { kind: 'tilted', tilted }
 }
 
 /**
@@ -134,7 +154,7 @@ export interface OperatorDeclaration {
   readonly check?: (params: Params, families: readonly Family[]) => string | undefined
   /** The message rules by mode; `support` follows from their kinds. */
   readonly rules: {
-    readonly ep?: SiteRule | MessageRule
+    readonly ep?: SiteRule | MessageRule | TiltedRuleDeclaration
     readonly vmp?: MessageRule
     readonly bp?: MessageRule
   }
@@ -199,7 +219,7 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
   const ep = rules.ep
   const takesPower = traits?.power === true
   const epHook =
-    ep === undefined
+    ep === undefined || ep.kind === 'tilted'
       ? undefined
       : ep.kind === 'message'
         ? ep.message
@@ -207,7 +227,7 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
             message: projectSite(c.args[c.to] as Arg, ep.tilt(c), takesPower ? c.power : 1),
           })
   const support: Partial<Record<Mode, Support>> = {
-    ...(ep === undefined ? {} : { ep: ep.support }),
+    ...(ep === undefined ? {} : { ep: ep.kind === 'tilted' ? ('numeric' as const) : ep.support }),
     ...(rules.vmp === undefined ? {} : { vmp: rules.vmp.support }),
     ...(rules.bp === undefined ? {} : { bp: rules.bp.support }),
   }
@@ -226,6 +246,7 @@ export function defineOperator(declaration: OperatorDeclaration): FactorOperator
     ...(declaration.unsupported === undefined ? {} : { unsupported: declaration.unsupported }),
     ...(declaration.check === undefined ? {} : { check: declaration.check }),
     ...(epHook === undefined ? {} : { ep: epHook }),
+    ...(ep?.kind === 'tilted' ? { tilted: ep.tilted } : {}),
     ...(rules.vmp === undefined ? {} : { vmp: rules.vmp.message }),
     ...(rules.bp === undefined ? {} : { bp: rules.bp.message }),
     ...(logEvidence === undefined

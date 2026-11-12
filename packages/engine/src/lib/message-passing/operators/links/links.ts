@@ -7,6 +7,7 @@
 import { logAddExp, sigmoidOf } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { bernoulli } from '../../core/families.ts'
 import type { Arg, FactorOperator, OperatorResult } from '../../core/types.ts'
 import { gaussianExpectation, tiltedGaussian, tiltedLogGrid } from '../../numerics/_quadrature.ts'
@@ -48,7 +49,7 @@ const logLogisticWeight = (pi: number, x: number, p: number): number =>
  * logistic.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.498', '0.206']
  * ```
  */
-export const logistic: FactorOperator = {
+export const logistic: FactorOperator = defineOperator({
   name: 'logistic',
   description: 'b | x ~ Bernoulli(sigmoid(x))',
   ports: [
@@ -56,61 +57,63 @@ export const logistic: FactorOperator = {
     { name: 'x', accepts: ['gaussian'] },
   ],
   params: {},
-  support: { ep: 'numeric', vmp: 'bound' },
-  readsTarget: (to) => to === 1,
-  power: true,
-  ep: (c): OperatorResult => {
-    const x = gaussianOf(arg(c, 1))
-    if (c.power !== 1) {
-      const p = c.power
-      if (c.to === 0) {
-        const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(v)).logMass
-        const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(-v)).logMass
-        return { message: [(yes - no) / p] }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const x = gaussianOf(arg(c, 1))
+      if (c.power !== 1) {
+        const p = c.power
+        if (c.to === 0) {
+          const yes = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(v)).logMass
+          const no = tiltedLogGrid(x.mean, x.variance, (v) => p * logSigmoidOf(-v)).logMass
+          return { message: [(yes - no) / p] }
+        }
+        const pi = trueProbability(arg(c, 0))
+        const t = tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p))
+        const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance)
+        return { message: [(site[0] ?? 0) / p, (site[1] ?? 0) / p] }
       }
-      const pi = trueProbability(arg(c, 0))
-      const t = tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p))
-      const site = gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance)
-      return { message: [(site[0] ?? 0) / p, (site[1] ?? 0) / p] }
-    }
-    if (c.to === 0) {
-      const yes = gaussianExpectation(x.mean, x.variance, sigmoidOf, POINTS)
-      const no = gaussianExpectation(x.mean, x.variance, (v) => sigmoidOf(-v), POINTS)
-      return { message: [Math.log(yes) - Math.log(no)] }
-    }
-    const t = tiltedGaussian(x.mean, x.variance, weight(trueProbability(arg(c, 0))), POINTS)
-    return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+      if (c.to === 0) {
+        const yes = gaussianExpectation(x.mean, x.variance, sigmoidOf, POINTS)
+        const no = gaussianExpectation(x.mean, x.variance, (v) => sigmoidOf(-v), POINTS)
+        return { message: [Math.log(yes) - Math.log(no)] }
+      }
+      const t = tiltedGaussian(x.mean, x.variance, weight(trueProbability(arg(c, 0))), POINTS)
+      return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+    }, 'numeric'),
+    vmp: messageRule((c): OperatorResult => {
+      const x = gaussianOf(arg(c, 1))
+      if (c.to === 0) return { message: [x.mean] }
+      const xi = Math.sqrt(x.variance + x.mean * x.mean)
+      return { message: [(2 * trueProbability(arg(c, 0)) - 1) / 2, 2 * jaakkolaLambda(xi)] }
+    }, 'bound'),
   },
-  vmp: (c): OperatorResult => {
-    const x = gaussianOf(arg(c, 1))
-    if (c.to === 0) return { message: [x.mean] }
-    const xi = Math.sqrt(x.variance + x.mean * x.mean)
-    return { message: [(2 * trueProbability(arg(c, 0)) - 1) / 2, 2 * jaakkolaLambda(xi)] }
-  },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const x = gaussianOf(arg(c, 1))
-    const b = arg(c, 0)
-    if (c.power !== 1) {
-      const p = c.power
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const x = gaussianOf(arg(c, 1))
+      const b = arg(c, 0)
+      if (c.power !== 1) {
+        const p = c.power
+        const pi = trueProbability(b)
+        return (
+          massOf(arg(c, 1)) +
+          (b.value === undefined ? massOf(b) : 0) +
+          tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p)).logMass
+        )
+      }
+      if (b.value !== undefined) {
+        const g = scalarOf(b) > 0 ? sigmoidOf : (v: number) => sigmoidOf(-v)
+        return massOf(arg(c, 1)) + Math.log(gaussianExpectation(x.mean, x.variance, g, POINTS))
+      }
       const pi = trueProbability(b)
-      return (
-        massOf(arg(c, 1)) +
-        (b.value === undefined ? massOf(b) : 0) +
-        tiltedLogGrid(x.mean, x.variance, (v) => logLogisticWeight(pi, v, p)).logMass
-      )
-    }
-    if (b.value !== undefined) {
-      const g = scalarOf(b) > 0 ? sigmoidOf : (v: number) => sigmoidOf(-v)
-      return massOf(arg(c, 1)) + Math.log(gaussianExpectation(x.mean, x.variance, g, POINTS))
-    }
-    const pi = trueProbability(b)
-    return massOf(arg(c, 1)) + massOf(b) + Math.log(gaussianExpectation(x.mean, x.variance, weight(pi), POINTS))
+      return massOf(arg(c, 1)) + massOf(b) + Math.log(gaussianExpectation(x.mean, x.variance, weight(pi), POINTS))
+    },
+    vmp: (c) => {
+      const x = gaussianOf(arg(c, 1))
+      const xi = Math.sqrt(x.variance + x.mean * x.mean)
+      const pi = trueProbability(arg(c, 0))
+      return Math.log(sigmoidOf(xi)) - xi / 2 + ((2 * pi - 1) * x.mean) / 2
+    },
   },
-  expectedLog: (c) => {
-    const x = gaussianOf(arg(c, 1))
-    const xi = Math.sqrt(x.variance + x.mean * x.mean)
-    const pi = trueProbability(arg(c, 0))
-    return Math.log(sigmoidOf(xi)) - xi / 2 + ((2 * pi - 1) * x.mean) / 2
-  },
-}
+  traits: { readsTarget: (to) => to === 1, power: true },
+})

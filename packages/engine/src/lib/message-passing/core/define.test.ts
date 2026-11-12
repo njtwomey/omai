@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { messageArg, siteMessage } from './args.ts'
-import { defineOperator, messageRule, projectSite, siteRule } from './define.ts'
+import { defineOperator, messageRule, projectSite, siteRule, tiltedRule } from './define.ts'
 import { ImproperMessageError, ParameterError } from './errors.ts'
 import { gamma, gammaEta, gaussian, gaussianEta } from './families.ts'
 import type { OperatorContext } from './types.ts'
@@ -72,6 +72,18 @@ describe('defineOperator', () => {
         rules: { ep: messageRule(() => ({ message: [0, 1] })) },
       }).support,
     ).toEqual({ ep: 'exact' })
+  })
+
+  it('keeps the tilted moments of a tilted rule as the `tilted` member, with no ep hook', () => {
+    const op = defineOperator({
+      name: 'tilt',
+      description: 'd',
+      ports: [port],
+      rules: { ep: tiltedRule(() => ({ moments: [1, 1.5], logZ: 0 })) },
+    })
+    expect(op.support).toEqual({ ep: 'numeric' })
+    expect(op.ep).toBeUndefined()
+    expect(op.tilted?.(ctx()).moments).toEqual([1, 1.5])
   })
 
   it('derives the ep hook from a site rule, dividing by the power only for an operator that takes one', () => {
