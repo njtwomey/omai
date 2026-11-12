@@ -3772,7 +3772,7 @@ end, never what a run computes.
 - `ep-grid.ts`: `epGridMethod` (kind `ep-grid`): EP inside a grid over the scalar hyperparameters a `custom` function reads (a
   kernel's length scale): each node conditions the spec on the values (`doSpec`), EP runs on the graph that is left, and the
   EP log evidence plus the log prior weights the node; the posterior is the evidence-weighted mixture, a step is one node in
-  a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass.
+  a coarse-to-fine order (any snapshot is a usable posterior), and the grid extends outwards where an edge still has mass. `order: 'walk'` (one hyperparameter) starts in the middle and steps outwards only while an edge still has mass, and `warm` starts each node from the nearest settled node's messages; a node that did not settle weighs the grid only where its evidence does not exceed the best settled node's.
 - `ep-multistart.ts`: `epMultiStartMethod` (kind `ep-multistart`): EP from several starts of the discrete messages (plain, one excluding
   each category, random; with `labels` the relabellings of every reading found), the distinct fixed points weighted by their EP evidence.
 - `ep-route.ts`: `epRoute(bound)`, the one place that chooses how EP runs a model (`ep`, `ep-grid` or `none`, with the verdict and the

@@ -116,7 +116,7 @@ rejects a key the space does not have, `atPower` puts the power of fractional EP
 | `restarts` | restarts with stronger damping when a run stalls | 1 | 1 | 1 |
 | `power` | fractional EP (1 is EP) | 1 | 1 | 1 |
 
-The method-specific knobs (`points`, `tail`, `maxNodes`, `edge` for the grid; `starts`, `jitter`, `exclusions`, `labels`, `merge` for
+The method-specific knobs (`points`, `tail`, `maxNodes`, `edge`, `order` (`bisect`, or `walk` from the middle of the range outwards, one hyperparameter), `window` (the nats at which a walk stops) and `warm` (each node started from the nearest settled node's messages) for the grid; `starts`, `jitter`, `exclusions`, `labels`, `merge` for
 multi-start) sit beside these. `granularity` is absent from the grid and multi-start methods because their step is a whole EP run.
 `atom.ep` is an `EpKnobs`: a key that is not a knob is a type error where the atom is written, an `OmaiError` in `defineAtom` and in
 `atomRun`: a misspelled knob used to run on the defaults and report success.

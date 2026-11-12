@@ -82,7 +82,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | gate-node: A gate over likelihoods of different families: no explicit gate node | missing-mapping | open | medium | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
-| sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision is not calibrated | quality | open | medium | - |
+| sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle | quality | open | small | - |
 | non-centred-scale: A non-centred scale (z / sqrt(precision)) has no variational message passing rule | quality | open | small | - |
 | evidence: The EP log evidence is exact where EP is, and has two known limits | infrastructure | open | medium | - |
 | variational-rules: Variational message passing: what it cannot run and where the mean field is poor | infrastructure | open | small | - |
