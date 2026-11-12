@@ -115,9 +115,10 @@ The factor operators: the registry of closed-form and numeric message rules (a p
 The operators of covariance matrices and correlation: the multivariate Gaussian with a Wishart precision, its normal- Wishart form, and the bivariate Gaussian with two gamma precisions and a beta correlation; with the shared sides of a matrix message. Part of `omai-engine/message-passing`.
 
 - structure `mvnNormalWishart`: The conjugate update of a Gaussian vector with unknown mean and precision matrix (normal-Wishart). `src/lib/message-passing/operators/covariance/covariance.ts:332` `omai-engine/message-passing`
-- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:104` `omai-engine/message-passing`
+- structure `mvnSdCorr`: A bivariate Gaussian with sds and correlation as separate variables (gamma precisions, a beta correlation). `src/lib/message-passing/operators/covariance/correlation.ts:67` `omai-engine/message-passing`
+- structure `mvnSdCorrGroup`: Bivariate vectors sharing a mean, sds and correlation, as one joint site. `src/lib/message-passing/operators/covariance/correlation-group.ts:134` `omai-engine/message-passing`
 - structure `mvnWishart`: A multivariate Gaussian with a Wishart precision matrix: a learned covariance. `src/lib/message-passing/operators/covariance/covariance.ts:233` `omai-engine/message-passing`
-- structure `mvnWishartGroup`: A group of Gaussian vectors sharing a Gaussian mean and a Wishart precision matrix: one joint site. `src/lib/message-passing/operators/covariance/hierarchy.ts:344` `omai-engine/message-passing`
+- structure `mvnWishartGroup`: A group of Gaussian vectors sharing a Gaussian mean and a Wishart precision matrix: one joint site. `src/lib/message-passing/operators/covariance/hierarchy.ts:191` `omai-engine/message-passing`
 
 ### message-passing/operators/discrete
 

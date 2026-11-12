@@ -6,11 +6,11 @@ in [`ep.md`](ep.md), what happened when in [`ep-changelog.md`](ep-changelog.md).
 
 ## Message-passing operators
 
-The registry (`defaultOperators()`) holds **68** factor operators. Rules by message mode:
+The registry (`defaultOperators()`) holds **69** factor operators. Rules by message mode:
 
 | mode | operators with a rule | exact | bound | numeric |
 | --- | --- | --- | --- | --- |
-| ep | 67 | 35 | 0 | 32 |
+| ep | 68 | 35 | 0 | 33 |
 | vmp | 62 | 36 | 4 | 22 |
 | bp | 4 | 4 | 0 | 0 |
 
@@ -76,7 +76,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | --- | --- | --- | --- | --- |
 | grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
-| correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the beta belief is too narrow | quality | open | medium | - |
+| correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the belief has its spread, not its shape | quality | open | small | - |
 | softmax-many-classes: Softmax beyond six classes: the variational rule, the probit with a power, correlated classes | missing-rule | open | small | - |
 | multimodal: One Gaussian per variable cannot show two modes | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
