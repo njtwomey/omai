@@ -1,7 +1,9 @@
 // Gauss-Hermite quadrature against a Gaussian message: the expectation of a function under a Gaussian and the moments
 // of a Gaussian times a function, what the numeric operators (a logistic link, a product, a user's density) integrate.
+import { ddot } from '../../numerics/linalg/index.ts'
 import { gaussHermite, gaussLegendre } from '../../numerics/quadrature/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, div, mul } from '../../tensor/index.ts'
+import { float64Of } from './_arrays.ts'
 import { shiftedSum } from './_moments.ts'
 
 const rules = new Map<number, { readonly x: Float64Array; readonly w: Float64Array }>()
@@ -11,7 +13,7 @@ function hermite(n: number): { readonly x: Float64Array; readonly w: Float64Arra
   if (r === undefined) {
     const g = gaussHermite(n)
     const norm = Math.sqrt(Math.PI)
-    r = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights), (v) => v / norm) }
+    r = { x: float64Of(g.nodes), w: float64Of(div(g.weights, norm)) }
     rules.set(n, r)
   }
   return r
@@ -33,15 +35,16 @@ export function gaussianNodes(
   if (variance <= 0) return { x: Float64Array.of(mean), w: Float64Array.of(1) }
   const { x, w } = hermite(n)
   const s = Math.sqrt(2 * variance)
-  return { x: Float64Array.from(x, (v) => mean + s * v), w }
+  return { x: float64Of(add(mean, mul(x, s))), w }
 }
 
 /** The expectation E[g(x)] for x ~ N(mean, variance). */
 export function gaussianExpectation(mean: number, variance: number, g: (x: number) => number, n = 48): number {
   const { x, w } = gaussianNodes(mean, variance, n)
-  let s = 0
-  for (let i = 0; i < x.length; i++) s += (w[i] ?? 0) * g(x[i] ?? 0)
-  return s
+  return ddot(
+    w,
+    Float64Array.from(x, (xi) => g(xi)),
+  )
 }
 
 /** The mass E[g] and the mean and variance of the density proportional to N(mean, variance) g(x). */
@@ -73,7 +76,7 @@ export function legendreRule(order: number): { readonly x: Float64Array; readonl
   let rule = legendre.get(order)
   if (rule === undefined) {
     const g = gaussLegendre(order)
-    rule = { x: Float64Array.from(toFlat(g.nodes)), w: Float64Array.from(toFlat(g.weights)) }
+    rule = { x: float64Of(g.nodes), w: float64Of(g.weights) }
     legendre.set(order, rule)
   }
   return rule

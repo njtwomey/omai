@@ -5,7 +5,8 @@
 // diagonal, all independent, so a product of generalised Gauss-Laguerre and Gauss-Hermite rules is a rule for the matrix.
 import { OmaiError } from '../../base/index.ts'
 import { gaussHermite, gaussLaguerre } from '../../numerics/quadrature/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { div, mul, sum } from '../../tensor/index.ts'
+import { float64Of } from './_arrays.ts'
 import { digammaOf } from './_scalar.ts'
 
 /**
@@ -80,10 +81,8 @@ function gammaRule(order: number, shape: number): { readonly x: Float64Array; re
   let rule = rules.get(key)
   if (rule === undefined) {
     const r = gaussLaguerre(order, shape - 1)
-    const x = Float64Array.from(toFlat(r.nodes))
-    const w = Float64Array.from(toFlat(r.weights))
-    const total = w.reduce((p, q) => p + q, 0)
-    rule = { x, w: w.map((v) => v / total) }
+    const w = r.weights
+    rule = { x: float64Of(r.nodes), w: float64Of(div(w, sum(w))) }
     rules.set(key, rule)
   }
   return rule
@@ -95,9 +94,8 @@ function normalRule(order: number): { readonly x: Float64Array; readonly w: Floa
   let rule = rules.get(key)
   if (rule === undefined) {
     const r = gaussHermite(order)
-    const w = Float64Array.from(toFlat(r.weights))
-    const total = w.reduce((p, q) => p + q, 0)
-    rule = { x: Float64Array.from(toFlat(r.nodes), (v) => v * Math.SQRT2), w: w.map((v) => v / total) }
+    const w = r.weights
+    rule = { x: float64Of(mul(r.nodes, Math.SQRT2)), w: float64Of(div(w, sum(w))) }
     rules.set(key, rule)
   }
   return rule

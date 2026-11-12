@@ -23,6 +23,7 @@ import type { FactorSpec, VariableSpec } from '../core/types.ts'
 import { momentProjection } from '../engine/projections.ts'
 import { messagePassingAlgorithm } from '../engine/run.ts'
 import type { MpState } from '../engine/state.ts'
+import { unitArray, zeroArray } from '../numerics/_arrays.ts'
 import { defaultOperators } from '../operators/registry.ts'
 import {
   type EpPath,
@@ -82,11 +83,11 @@ export function expectationConsistentGraph(
     {
       operator: 'prior',
       args: ['x'],
-      params: { eta: [...(model.shift ?? new Array<number>(d).fill(0)), ...model.precision] },
+      params: { eta: [...(model.shift ?? zeroArray(d)), ...model.precision] },
     },
   ]
   for (const [i, site] of model.sites.entries()) {
-    const a = Array.from({ length: d }, (_, k) => (k === i ? 1 : 0))
+    const a = unitArray(d, i)
     if (site.kind === 'spin') {
       factors.push({ operator: 'spin-row', args: ['x'], params: { a, field: site.field ?? 0 } })
     } else {

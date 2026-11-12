@@ -7,8 +7,10 @@
 // callers as the named `gridProfiles`: how the panels are laid and graded towards a kink, the panels and nodes of the coarse and
 // the fine pass, and the order the weights are stored in (the order the sums run in, so a result is the same number as it was).
 
+import { arange, pow, toFlat } from '../../tensor/index.ts'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import type { Arg } from '../core/types.ts'
+import { gridArray } from './_arrays.ts'
 import { centredMoments, shiftedSum } from './_moments.ts'
 import { legendreRule } from './_quadrature.ts'
 import { lgammaOf, softplusOf } from './_scalar.ts'
@@ -106,7 +108,7 @@ export interface GridNResult {
 }
 
 /** The offsets 0, 2^-(n-1), ..., 1/4, 1/2 of a stretch of n panels, each half the one after it (the last boundary, 1, is the stretch's end). */
-const graded = (n: number): number[] => [0, ...Array.from({ length: n - 1 }, (_, i) => 2 ** -(n - 1 - i))]
+const graded = (n: number): number[] => [0, ...toFlat(pow(2, arange(1 - n, 0)))]
 
 /** The panel boundaries of [a, b], `count` panels: uniform, graded geometrically towards an end that is a kink. */
 function boundaries(a: number, b: number, count: number, kinkLeft: boolean, kinkRight: boolean): number[] {
@@ -127,7 +129,7 @@ function boundaries(a: number, b: number, count: number, kinkLeft: boolean, kink
         .map((v) => b - len * v)
         .reverse(),
     ].slice(0, count + 1)
-  return Array.from({ length: count + 1 }, (_, i) => a + (len * i) / count)
+  return Array.from(gridArray(a, b, count + 1))
 }
 
 /** The nodes and weights of a panelled rule on [lo, hi], with the panels split at the kinks that fall inside and graded towards them. */

@@ -11,7 +11,7 @@
  */
 
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, div, less, mul, toFlat, where } from '../../tensor/index.ts'
 import { type CompiledGraph, compileGraph } from '../core/graph.ts'
 import { gaussianPrior } from '../core/priors.ts'
 import { shiftedSum } from '../numerics/_moments.ts'
@@ -71,11 +71,12 @@ export function clutterProblem(key: Key, options: ClutterOptions = {}): ClutterP
   const weight = options.weight ?? 0.5
   const clutterVariance = options.clutterVariance ?? 10
   const priorVariance = options.priorVariance ?? 100
-  const u = toFlat(uniform(foldIn(key, 0), [n]))
-  const good = toFlat(normal(foldIn(key, 1), [n], { loc: truth }))
-  const bad = toFlat(normal(foldIn(key, 2), [n], { scale: Math.sqrt(clutterVariance) }))
-  const isClutter = Array.from({ length: n }, (_, i) => (u[i] ?? 1) < weight)
-  const ys = Array.from({ length: n }, (_, i) => (isClutter[i] === true ? (bad[i] ?? 0) : (good[i] ?? 0)))
+  const u = uniform(foldIn(key, 0), [n])
+  const good = normal(foldIn(key, 1), [n], { loc: truth })
+  const bad = normal(foldIn(key, 2), [n], { scale: Math.sqrt(clutterVariance) })
+  const clutter = less(u, weight)
+  const isClutter = toFlat(clutter).map((v) => v === 1)
+  const ys = toFlat(where(clutter, bad, good))
   return { ys, truth, weight, clutterVariance, priorVariance, isClutter }
 }
 
@@ -157,7 +158,7 @@ export function clutterPosterior(problem: ClutterProblem): ClutterPosterior {
   const lo = Math.min(0, ...problem.ys) - 8
   const hi = Math.max(0, ...problem.ys) + 8
   const h = (hi - lo) / (points - 1)
-  const x = Array.from({ length: points }, (_, i) => lo + i * h)
+  const x = toFlat(add(lo, mul(arange(points), h)))
   const logp = x.map(
     (v) =>
       Math.log(density(v, 0, problem.priorVariance)) +
@@ -171,7 +172,7 @@ export function clutterPosterior(problem: ClutterProblem): ClutterPosterior {
     return s * h
   }
   const z = trapezoid((i) => raw[i] ?? 0)
-  const dens = raw.map((r) => r / z)
+  const dens = toFlat(div(weights, z))
   const mean = trapezoid((i) => (x[i] ?? 0) * (dens[i] ?? 0))
   const variance = trapezoid((i) => ((x[i] ?? 0) - mean) ** 2 * (dens[i] ?? 0))
   const tiny = 1e-300
