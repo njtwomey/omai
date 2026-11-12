@@ -177,9 +177,9 @@ function binnedKl(x: readonly number[], w: readonly number[], oracle: MarginalOr
  * import { agree, distributionOracle } from 'omai-engine/probprog/validation'
  * import { normal } from 'omai-engine/dists'
  * import { key } from 'omai-engine/random'
- * import { item } from 'omai-engine/tensor'
+ * import { toFlat } from 'omai-engine/tensor'
  * const exact = normal(0.6, Math.sqrt(0.5))
- * const draws = Array.from({ length: 2000 }, (_, i) => item(exact.sample(key(i), [])))
+ * const draws = toFlat(exact.sample(key(0), [2000]))
  * const table = agree([{ name: 'iid', draws: { m: draws } }], { oracle: { m: distributionOracle('m', exact) } })
  * table.rows[0]?.ks !== undefined && (table.rows[0]?.ks ?? 1) < 0.05 // => true
  * ```

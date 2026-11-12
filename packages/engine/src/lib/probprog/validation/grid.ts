@@ -11,7 +11,24 @@
 import { OmaiError } from '../../base/index.ts'
 import { bijectors, type Support } from '../../dists/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
-import { add, arange, concat, div, full, item, mul, tensor, toArray, toFlat, zeros } from '../../tensor/index.ts'
+import {
+  add,
+  arange,
+  concat,
+  cumsum,
+  diagonal,
+  div,
+  full,
+  mul,
+  slice,
+  sqrt,
+  stack,
+  sub,
+  tensor,
+  toArray,
+  toFlat,
+  zeros,
+} from '../../tensor/index.ts'
 import { findInitialParams, type LatentLayout, potentialEnergy } from '../density.ts'
 import { laplaceFit } from '../engines/laplace.ts'
 import type { Model } from '../primitives.ts'
@@ -185,11 +202,8 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     if (!start.valid) throw new OmaiError('value', 'gridPosterior: no valid starting point')
     const fit = laplaceFit(um, start.unconstrained)
     const width = options.width ?? 7
-    box = Array.from({ length: d }, (_, k) => {
-      const centre = fit.mode.data[k] ?? 0
-      const sd = Math.sqrt(fit.covariance.data[k * d + k] ?? 1)
-      return [centre - width * sd, centre + width * sd] as [number, number]
-    })
+    const spread = mul(sqrt(diagonal(fit.covariance)), width)
+    box = toArray(stack([sub(fit.mode, spread), add(fit.mode, spread)], 1)) as [number, number][]
   }
   const f = (u: Float64Array): number => um.logDensity.logDensity(u)
   let evaluations = 0
@@ -238,14 +252,16 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
     const p = final.marginals[k] as number[]
     const w = final.weights[k] as number[]
     const b = bijectors.bijectorForSupport(layout.support)
-    const x = Float64Array.from(u, (v) => item(b.forward(tensor(v))))
+    const x = toFlat(b.forward(tensor(u)))
     const increasing = (x[n - 1] ?? 0) >= (x[0] ?? 0)
     // Cumulative trapezoid of the marginal in u, which carries over to x unchanged (a monotone map).
-    const F = new Float64Array(n)
-    for (let j = 1; j < n; j++)
-      F[j] = (F[j - 1] ?? 0) + (((p[j] ?? 0) + (p[j - 1] ?? 0)) / 2) * ((u[j] ?? 0) - (u[j - 1] ?? 0))
-    const norm = F[n - 1] ?? 1
-    for (let j = 0; j < n; j++) F[j] = (F[j] ?? 0) / norm
+    const [pt, ut] = [tensor(p), tensor(u)]
+    const step = mul(
+      div(add(slice(pt, [1], [n]), slice(pt, [0], [n - 1])), 2),
+      sub(slice(ut, [1], [n]), slice(ut, [0], [n - 1])),
+    )
+    const running = concat([zeros([1]), cumsum(step)])
+    const F = toFlat(div(running, slice(running, [n - 1], [n])))
     let mean = 0
     let second = 0
     for (let j = 0; j < n; j++) {
@@ -253,9 +269,9 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
       mean += m * (x[j] ?? 0)
       second += m * (x[j] ?? 0) ** 2
     }
-    const xs = increasing ? x : Float64Array.from(x).reverse()
-    const Fs = increasing ? F : Float64Array.from(F, (v) => 1 - v).reverse()
-    const locate = (grid: Float64Array, target: number): number => {
+    const xs = increasing ? x : [...x].reverse()
+    const Fs = increasing ? F : F.map((v) => 1 - v).reverse()
+    const locate = (grid: ArrayLike<number>, target: number): number => {
       let lo = 0
       let hi = n - 1
       while (hi - lo > 1) {
@@ -295,7 +311,7 @@ export function gridPosterior<D = void>(model: Model<D>, data: D, options: GridO
       throw new OmaiError('not-implemented', `gridPosterior: the support of ${name} has no coordinate-wise density`)
     const u = final.axes[k] as number[]
     const b = bijectors.bijectorForSupport(layout.support)
-    const x = Array.from(u, (v) => item(b.forward(tensor(v))))
+    const x = toFlat(b.forward(tensor(u)))
     const slope = x.map((_, j) => {
       const a = Math.max(0, j - 1)
       const c = Math.min(n - 1, j + 1)

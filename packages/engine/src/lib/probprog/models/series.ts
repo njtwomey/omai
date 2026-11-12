@@ -9,7 +9,7 @@
  */
 
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, arange, equal, mul, stack, sum, tensor, toFlat, where } from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops } from '../model/index.ts'
 import { type MarginalOracle, weightedOracle } from '../validation/index.ts'
@@ -59,8 +59,10 @@ export function stochasticVolatilityTruth(
   const G = points
   const lo = SV.mu - 6 * SV_S0
   const step = (12 * SV_S0) / (G - 1)
-  const h = Float64Array.from({ length: G }, (_, g) => lo + g * step)
+  const h = toFlat(add(mul(arange(G), step), lo))
   // Transition: T[a][b] = N(h_b; mu + phi (h_a - mu), sigma) * step.
+  // The transition table, the filter's rows and the backward weights are the working buffers of the filter and the smoother
+  // (G x G steps for each observation), rewritten in place: a tensor op per step would allocate in the innermost loop.
   const T = new Float64Array(G * G)
   const c = step / (SV.sigma * Math.sqrt(2 * Math.PI))
   for (let a = 0; a < G; a++) {
@@ -105,10 +107,7 @@ export function stochasticVolatilityTruth(
   }
   const marginals: Record<string, MarginalOracle> = {}
   for (let t = 0; t < y.length; t++) {
-    const weights = Float64Array.from(
-      { length: G },
-      (_, g) => ((alpha[t] as Float64Array)[g] as number) * ((beta[t] as Float64Array)[g] as number),
-    )
+    const weights = toFlat(mul(alpha[t] as Float64Array, beta[t] as Float64Array))
     marginals[`h[${t}]`] = weightedOracle(`h[${t}]`, h, weights)
   }
   return {
@@ -222,12 +221,8 @@ function visitsOfLastState(draws: Readonly<Record<string, ArrayLike<number>>>): 
   const sites = Object.keys(draws).filter((n) => /^z\[\d+\]$/.test(n))
   const first = draws[sites[0] ?? '']
   if (first === undefined) return {}
-  const out = new Float64Array(first.length)
-  for (const s of sites) {
-    const v = draws[s] as ArrayLike<number>
-    for (let i = 0; i < out.length; i++) if (v[i] === 2) out[i] = (out[i] as number) + 1
-  }
-  return { visits_2: out }
+  const inLastState = sites.map((s) => where(equal(tensor(Array.from(draws[s] as ArrayLike<number>)), 2), 1, 0))
+  return { visits_2: toFlat(sum(stack(inLastState), 0)) }
 }
 
 /**

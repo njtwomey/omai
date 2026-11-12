@@ -9,7 +9,20 @@
  */
 
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import {
+  add,
+  arange,
+  exp,
+  floor as floorOf,
+  less,
+  maximum,
+  minimum,
+  mul,
+  repeat,
+  take,
+  toFlat,
+  where,
+} from '../../tensor/index.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, type ModelDefinition, ops } from '../model/index.ts'
 import type { BenchmarkData } from './benchmark.ts'
@@ -207,29 +220,23 @@ export function generateRadonCounties(key: Key, options: RadonCountiesOptions): 
   const slopeSd = options.slopeSd ?? 0
   const rho = options.rho ?? -0.5
   const maxSize = options.maxSize ?? 60
-  const a = toFlat(drawNormal(foldIn(key, 0), [J]))
-  const b = toFlat(drawNormal(foldIn(key, 1), [J]))
-  const tail = toFlat(drawNormal(foldIn(key, 2), [J]))
-  const sizes = Array.from({ length: J }, (_, j) =>
-    Math.min(maxSize, Math.max(minSize, minSize + Math.floor(Math.exp(1.2 + 0.9 * (tail[j] ?? 0))))),
-  )
-  const alpha = Array.from(a, (v) => RADON_TRUTH.mu + tau * v)
-  const slope = Array.from(a, (v, j) => RADON_TRUTH.beta + slopeSd * (rho * v + Math.sqrt(1 - rho * rho) * (b[j] ?? 0)))
+  const a = drawNormal(foldIn(key, 0), [J])
+  const b = drawNormal(foldIn(key, 1), [J])
+  const tail = drawNormal(foldIn(key, 2), [J])
+  const sizes = toFlat(minimum(maxSize, maximum(minSize, add(floorOf(exp(add(mul(tail, 0.9), 1.2))), minSize))))
+  const alphaT = add(mul(a, tau), RADON_TRUTH.mu)
+  const slopeT = add(mul(add(mul(a, rho), mul(b, Math.sqrt(1 - rho * rho))), slopeSd), RADON_TRUTH.beta)
+  const alpha = toFlat(alphaT)
+  const slope = toFlat(slopeT)
   const total = sizes.reduce((s, v) => s + v, 0)
-  const u = toFlat(drawUniform(foldIn(key, 3), [total]))
-  const e = toFlat(drawNormal(foldIn(key, 4), [total]))
-  const county: number[] = []
-  const floor: number[] = []
-  const y: number[] = []
-  let row = 0
-  sizes.forEach((n, j) => {
-    for (let i = 0; i < n; i++, row++) {
-      const f = (u[row] ?? 1) < 0.4 ? 1 : 0
-      county.push(j)
-      floor.push(f)
-      y.push((alpha[j] ?? 0) + (slope[j] ?? 0) * f + RADON_TRUTH.sigma * (e[row] ?? 0))
-    }
-  })
+  const u = drawUniform(foldIn(key, 3), [total])
+  const e = drawNormal(foldIn(key, 4), [total])
+  // the houses of each county in turn: the county of each house, its floor, and the log radon from its county's line
+  const countyT = repeat(arange(J), sizes)
+  const floorT = where(less(u, 0.4), 1, 0)
+  const county = toFlat(countyT)
+  const floor = toFlat(floorT)
+  const y = toFlat(add(add(take(alphaT, countyT), mul(take(slopeT, countyT), floorT)), mul(e, RADON_TRUTH.sigma)))
   return {
     data: { county, floor, y, size: sizes },
     generating: { ...RADON_TRUTH, tau, slopeSd, rho, alpha, slope, sizes },

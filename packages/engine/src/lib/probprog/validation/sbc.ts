@@ -240,7 +240,8 @@ export function sbcReplication<D>(
  * @example
  * ```ts
  * import { sbcSummary } from 'omai-engine/probprog/validation'
- * const ranks = Array.from({ length: 40 }, (_, i) => i % 20)
+ * import { arange, mod, toFlat } from 'omai-engine/tensor'
+ * const ranks = toFlat(mod(arange(40), 20))
  * sbcSummary({ m: ranks }, { numRanks: 19, nullSimulations: 200 }).passes // => true
  * ```
  */

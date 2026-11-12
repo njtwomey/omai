@@ -11,7 +11,7 @@
 
 import { OmaiError } from '../../base/index.ts'
 import { normal as drawNormal, uniform as drawUniform, foldIn, type Key, key as makeKey } from '../../random/index.ts'
-import { toFlat } from '../../tensor/index.ts'
+import { add, mul, tanh, tensor, toFlat, type Value } from '../../tensor/index.ts'
 import { mcmc } from '../engines/nuts.ts'
 import * as d from '../model/dists/index.ts'
 import { defineModel, ops, toProgram } from '../model/index.ts'
@@ -51,21 +51,14 @@ const REFERENCE: readonly { readonly mean: number; readonly sd: number }[] = [
 function networkOutputs(draws: Readonly<Record<string, ArrayLike<number>>>): Record<string, ArrayLike<number>> {
   const n = draws['b2']?.length
   if (n === undefined) return {}
-  const out: Record<string, Float64Array> = {}
+  const out: Record<string, number[]> = {}
+  const column = (name: string) => tensor(Array.from(draws[name] as ArrayLike<number>))
   BNN_TEST_INPUTS.forEach((x, j) => {
-    const f = new Float64Array(n)
-    for (let i = 0; i < n; i++) {
-      let v = (draws['b2'] as ArrayLike<number>)[i] as number
-      for (let h = 0; h < HIDDEN; h++)
-        v +=
-          ((draws[`w2[${h}]`] as ArrayLike<number>)[i] as number) *
-          Math.tanh(
-            ((draws[`w1[${h}]`] as ArrayLike<number>)[i] as number) * x +
-              ((draws[`b1[${h}]`] as ArrayLike<number>)[i] as number),
-          )
-      f[i] = v
-    }
-    out[`fstar[${j}]`] = f
+    // the output of the network at x for every draw at once: the output bias plus the hidden units, added in order
+    let f: Value = column('b2')
+    for (let h = 0; h < HIDDEN; h++)
+      f = add(f, mul(column(`w2[${h}]`), tanh(add(mul(column(`w1[${h}]`), x), column(`b1[${h}]`)))))
+    out[`fstar[${j}]`] = toFlat(f)
   })
   return out
 }

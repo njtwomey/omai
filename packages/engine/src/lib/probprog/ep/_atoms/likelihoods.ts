@@ -427,7 +427,7 @@ function gpSoftmaxProblem(k: Config): AtomParts {
   // per class, so the covariance is the kernel matrix between the inputs where the classes agree and zero where they do not
   const cells = n * GPS_CLASSES
   const covariance = toArray(add(kron(kxTensor, eye(GPS_CLASSES)), mul(eye(cells), 1e-6))) as number[][]
-  const index = Array.from({ length: n }, (_, i) => Array.from({ length: GPS_CLASSES }, (_, c) => i * GPS_CLASSES + c))
+  const index = toArray(reshape(arange(n * GPS_CLASSES), [n, GPS_CLASSES])) as number[][]
   // region gp-softmax
   const definition = defineModel('gp-softmax', (m) => {
     const cell = m.range('cell', { size: cells })
