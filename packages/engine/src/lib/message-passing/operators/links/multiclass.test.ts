@@ -95,15 +95,16 @@ function check(
   for (let k = 0; k < cavities.length; k++) {
     const got = multiclassSite.ep?.({ mode: 'ep', to: k, args, params, power }).message as readonly number[]
     const c = cavities[k] as Cavity
-    // The site is the tilted Gaussian over the cavity in natural parameters.
-    const wantPrecision = 1 / (b.variance[k] as number) - 1 / c.v
-    const wantH = (b.mean[k] as number) / (b.variance[k] as number) - c.m / c.v
-    expect(Math.abs((got[1] as number) - wantPrecision), `${link} class ${k} precision`).toBeLessThan(
+    // Fractional EP: the cavity times the site to the power p is the projection of the tilted factor (cavity times the factor to
+    // the power p), so cavity + p * site = tilted in natural parameters; at power 1 the site is the tilted over the cavity.
+    const gotPrecision = 1 / c.v + power * (got[1] as number)
+    const gotH = c.m / c.v + power * (got[0] as number)
+    const wantPrecision = 1 / (b.variance[k] as number)
+    const wantH = (b.mean[k] as number) / (b.variance[k] as number)
+    expect(Math.abs(gotPrecision - wantPrecision), `${link} class ${k} precision`).toBeLessThan(
       tolerance * (1 + Math.abs(wantPrecision)),
     )
-    expect(Math.abs((got[0] as number) - wantH), `${link} class ${k} mean term`).toBeLessThan(
-      tolerance * (1 + Math.abs(wantH)),
-    )
+    expect(Math.abs(gotH - wantH), `${link} class ${k} mean term`).toBeLessThan(tolerance * (1 + Math.abs(wantH)))
   }
   const want = b.logMass + args.reduce((s, a) => s + massOf(a), 0)
   const got = multiclassSite.logEvidence?.({ mode: 'ep', to: 0, args, params, power }) as number
@@ -129,6 +130,15 @@ describe('multiclass-site: tilted moments and log evidence against a brute-force
       ],
       8e-3,
     )
+  })
+  it('softmax with a power: cavity + power * site is the tilted Gaussian, so the site is the quotient divided by the power', () => {
+    const cavities = [
+      { m: 0.3, v: 1 },
+      { m: -0.2, v: 0.8 },
+      { m: 0.1, v: 1.5 },
+    ]
+    check('logit', 1, cavities, 4e-3, {}, 0.5)
+    check('logit', 0, cavities, 4e-3, {}, 1.7)
   })
   it('softmax, two classes is the logistic link', () => {
     check('logit', 0, [

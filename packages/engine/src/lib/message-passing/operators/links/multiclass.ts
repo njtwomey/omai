@@ -14,8 +14,8 @@
  */
 
 import { errorText, keyOf, memoised } from '../../core/_messages.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam } from '../../core/args.ts'
-import { defineOperator, messageRule } from '../../core/define.ts'
+import { allProper, gaussianOf, massOf, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Params, Port } from '../../core/types.ts'
 import { zeroArray } from '../../numerics/_arrays.ts'
@@ -195,13 +195,14 @@ export const multiclassSite: FactorOperator = defineOperator({
     }
   },
   rules: {
-    ep: messageRule((c): OperatorResult => {
+    // The tilted mean and variance of the score, projected by the engine: the message is the quotient by the cavity and, with a
+    // power, divided by it (fractional EP: cavity + power * message is the projection of the tilted factor).
+    ep: siteRule((c) => {
       const t = tilt(c)
       const at = t.free.indexOf(c.to)
-      if (at < 0) return { message: [0, 0] }
-      const own = etaOf(c.args[c.to] as Arg)
-      return { message: gaussianSiteMessage(own, t.mean[at] as number, t.variance[at] as number) }
-    }, 'numeric'),
+      if (at < 0) return { flat: true }
+      return { mean: t.mean[at] as number, variance: t.variance[at] as number }
+    }),
     // The mean field: the non-conjugate message of log P(y | z) to a score under the beliefs of the others (the grid is a product over
     // the free scores, with fewer nodes the more there are). The softmax is log-concave in the scores, so the precisions are positive.
     vmp: messageRule(

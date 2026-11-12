@@ -1,7 +1,8 @@
 // Fractional EP on the softmax classifier, whose three class slopes share every observation. With one message per class score
-// (`packScalars: false`) one Gaussian each leaves their spreads too narrow (about half the exact posterior's with 24 points) and the
-// run does not settle; a power of about 5 / rows (the `power` knob of `epSpecMethod`) widens them to the exact spread, the run settles,
-// and the mean moves by a fraction of a sd. Packed (the default for EP) the slopes are one vector and each observation one joint site
+// (`packScalars: false`) one Gaussian each leaves their spreads too narrow (about half the exact posterior's with 24 points); the
+// `power` knob of `epSpecMethod` (fractional EP, the site divided by the power) changes the spread by a few percent only, so it is no
+// substitute for the joint site (the scalar site once sent the undivided message, whose fixed point mixed the cavity and the
+// projection and did widen the slopes: that was not fractional EP and is gone). Packed (the default for EP) the slopes are one vector and each observation one joint site
 // (`multiclass-row`), which carries the correlations: plain EP has the exact spread and means, and the power is not needed.
 import { describe, expect, it } from 'vitest'
 import { session } from '../../trace/index.ts'
@@ -47,14 +48,15 @@ describe('fractional EP (the power knob) on the softmax classifier', () => {
     expect(plain.converged).toBe(true)
   }, 60_000)
 
-  it('with a message per score, plain EP is too narrow, a power of 0.2 gives the exact spread, settles, and moves the mean by less than half a sd', () => {
+  it('with a message per score, plain EP is too narrow, and fractional EP (the site divided by the power) stays about as narrow: the correlations are what is missing', () => {
+    // The scalar site's message is divided by the power as every power rule's is (cavity + power * message is the projection), so the
+    // fixed point is fractional EP's and the power does not stand in for the joint site: the spread moves by a few percent.
     const plain = against(1)
-    const fractional = against(0.2)
+    const fractional = against(0.5)
     expect(plain.sdRatio).toBeLessThan(0.7)
-    expect(fractional.sdRatio).toBeGreaterThan(0.8)
-    expect(fractional.sdRatio).toBeLessThan(1.25)
+    expect(Math.abs(fractional.sdRatio - plain.sdRatio)).toBeLessThan(0.05)
     expect(fractional.converged).toBe(true)
-    expect(fractional.meanError).toBeLessThan(0.5)
+    expect(fractional.meanError).toBeLessThan(0.15)
     expect(plain.meanError).toBeLessThan(0.15)
   }, 60_000)
 
@@ -66,7 +68,7 @@ describe('fractional EP (the power knob) on the softmax classifier', () => {
     expect(knobs(vmpSpecMethod(atomBound(problem)))).not.toContain('power')
   })
 
-  it('the multi-start method takes the same power: a power below one widens the slopes there too (one message per score)', () => {
+  it('the multi-start method takes the same power (one message per score): the spread of the first slope changes by a few percent', () => {
     const sdOf = (power: number): number => {
       const method = epMultiStartMethod(atomBound(problem), { packScalars: false })
       const run = session(method, {
@@ -78,6 +80,7 @@ describe('fractional EP (the power knob) on the softmax classifier', () => {
       const post = method.posterior?.(run.state, run.config)
       return post?.summary().find((r) => r.site === problem.quantities[0]?.name.replace(/\[.*$/, ''))?.sd ?? Number.NaN
     }
-    expect(sdOf(0.2)).toBeGreaterThan(sdOf(1))
+    expect(Math.abs(sdOf(0.5) / sdOf(1) - 1)).toBeLessThan(0.1)
+    expect(sdOf(0.5)).not.toBe(sdOf(1))
   }, 60_000)
 })
