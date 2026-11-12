@@ -213,3 +213,31 @@ describe('the multi-start mixture on the benchmark mixture with symmetric priors
     )
   })
 })
+
+describe('`sort` with a second site that has as many entries as there are components', () => {
+  it('sorts by the per-component means and leaves the per-group effects where the model put them', () => {
+    // Two clusters and two groups of rows: `b` (one effect per group, declared first) is a vector of the length of the components
+    // too. Sorting by the first vector of that length took `b` for the components and moved both vectors the wrong way.
+    const groups = Y.map((_, i) => i % 2)
+    const spec = defineModel('clusters-and-groups', (m) => {
+      const row = m.range('row')
+      const k = m.range('component', { size: 2 })
+      const group = m.range('group', { size: 2 })
+      const y = m.data('y', { dims: [row], role: 'response' })
+      const g = m.data('g', { dims: [row], role: 'index', indexes: 'group' })
+      const b = m.latent('b', d.normal(m.const([1, -1], ['group']), 0.1), { dims: [group] })
+      const mu = m.latent('mu', d.normal(m.const([-0.5, 0.5], ['component']), 4), { dims: [k] })
+      const z = m.latent('z', d.categorical({ probs: [0.5, 0.5] }), { dims: [row] })
+      m.observe('y', d.normal(mu.at(z).add(b.at(g)), 1), y)
+    }).bind({ y: Y, g: groups }, { sizes: { component: 2, group: 2 } })
+    const method = epMultiStartMethod(spec)
+    const run = session(method, { steps: 40, mode: 'eager', config: { starts: 12, labels: 'sort' } })
+    const rows = method.posterior?.(run.state, run.config)?.summary() ?? []
+    const means = (site: string): number[] => rows.filter((r) => r.site === site).map((r) => r.mean)
+    // the components in order of their means (about -2.9 and 3.1), the groups as the model has them (about 0.92 and -0.92)
+    expect(means('mu')[0]).toBeLessThan(-2)
+    expect(means('mu')[1]).toBeGreaterThan(2)
+    expect(means('b')[0]).toBeGreaterThan(0.5)
+    expect(means('b')[1]).toBeLessThan(-0.5)
+  })
+})

@@ -20,7 +20,63 @@ import {
   toFlat,
   type Value,
 } from '../../tensor/index.ts'
+import { nodeExprs, nodesByName } from '../model/analysis-exprs.ts'
+import { type ExprSpec, exprRefs, type ModelSpec } from '../model/spec.ts'
 import type { SiteRecord } from './_site-mixture.ts'
+
+/**
+ * Which axes of a site are indexed by the components: positions in the record's shape. `undefined` for a site means the axes are not
+ * known and every axis of length `k` is taken to be one (the only reading there is without the model; wrong for a site with a
+ * second axis of the same length that is not per component).
+ */
+export type ComponentAxes = (site: string) => readonly number[] | undefined
+
+const DISCRETE = new Set(['categorical', 'bernoulli'])
+
+/**
+ * The component axes of the sites of a model, from how it uses its discrete latents: the first dimension of a table that a
+ * discrete latent looks up (`mu.at(z)`: the dimension `component` of `mu`) is a component dimension, so the axes of any node
+ * with that dimension are component axes; and the trailing (event) axes of a node that a discrete latent's distribution reads
+ * (the weights of `categorical({ probs: weights })`) are the categories, so component axes too. A model that does neither (a
+ * mixture written with `where`, a gate) has no such metadata and gives `undefined`.
+ *
+ * @param spec - The model.
+ * @returns The component axes of a site by name, or undefined when the model names none.
+ */
+export function componentAxesOf(spec: ModelSpec): ComponentAxes | undefined {
+  const byName = nodesByName(spec)
+  const discrete = new Set<string>()
+  const categories = new Set<string>()
+  for (const n of spec.nodes)
+    if (n.kind === 'latent' && DISCRETE.has(n.dist.family)) {
+      discrete.add(n.name)
+      for (const e of Object.values(n.dist.params)) for (const r of exprRefs(e)) categories.add(r)
+    }
+  const dims = new Set<string>()
+  const walk = (e: ExprSpec): void => {
+    if (e.kind !== 'op' && e.kind !== 'custom') return
+    for (const a of e.args) walk(a)
+    if (e.kind === 'op' && e.op === 'at') {
+      const [table, index] = e.args
+      if (table?.kind === 'ref' && index?.kind === 'ref' && discrete.has(index.name)) {
+        const first = byName.get(table.name)?.dims[0]
+        if (first !== undefined) dims.add(first)
+      }
+    }
+  }
+  for (const n of spec.nodes) for (const e of nodeExprs(n)) walk(e)
+  if (dims.size === 0 && categories.size === 0) return undefined
+  return (site) => {
+    const node = byName.get(site)
+    if (node === undefined) return undefined
+    const axes: number[] = []
+    for (const [i, d] of node.dims.entries()) if (dims.has(d)) axes.push(i)
+    // the event axes of a node that is the class probabilities of a discrete latent
+    if (categories.has(site))
+      for (let i = node.dims.length; i < node.dims.length + Math.max(node.eventRank, 1); i++) axes.push(i)
+    return axes
+  }
+}
 
 /** The `k!` permutations of `0..k-1` in lexicographic order (the first is the identity). */
 export function permutations(k: number): number[][] {
@@ -44,32 +100,49 @@ export function moveAxis<T>(xs: readonly T[], perm: readonly number[]): T[] {
   return out
 }
 
-/** The same move applied to every axis of length `k` of a row-major array of the given shape. */
-function moveAxes(values: readonly number[], shape: readonly number[], k: number, perm: readonly number[]): number[] {
+/** The same move applied to the component axes of a row-major array of the given shape (`axes`; absent: every axis of length `k`). */
+function moveAxes(
+  values: readonly number[],
+  shape: readonly number[],
+  k: number,
+  perm: readonly number[],
+  axes?: readonly number[],
+): number[] {
   // Entry `q` goes to `perm[q]`, so position `j` takes the entry whose destination is `j`: the inverse permutation.
   const from = argsort(tensor(perm))
   let cur: Value = reshape(tensor(values), shape)
-  for (const [axis, len] of shape.entries()) if (len === k) cur = take(cur, from, axis)
+  for (const [axis, len] of shape.entries())
+    if (len === k && (axes === undefined || axes.includes(axis))) cur = take(cur, from, axis)
   return toFlat(cur)
 }
 
 /**
- * A site's record with the components relabelled: entry `q` of every axis of length `k` moves to `perm[q]`. A covariance is moved
- * along both of its axes, a categorical site's probabilities along their category axis.
+ * A site's record with the components relabelled: entry `q` of every component axis of length `k` moves to `perm[q]`. A covariance
+ * is moved along both of its axes, a categorical site's probabilities along their category axis (when they are over `k` categories).
+ *
+ * @param r - The record.
+ * @param perm - The permutation: entry `q` goes to `perm[q]`.
+ * @param k - The number of components.
+ * @param axes - The axes of the record's shape that are indexed by the components (`componentAxesOf`); absent: every axis of
+ * length `k`, which moves a second axis of the same length that is not per component (a `k` by `k` site of a model with `k`
+ * dimensions of data).
+ * @returns The relabelled record.
  */
-export function relabelRecord(r: SiteRecord, perm: readonly number[], k: number): SiteRecord {
-  const moved = (v: readonly number[]): number[] => moveAxes(v, r.shape, k, perm)
+export function relabelRecord(r: SiteRecord, perm: readonly number[], k: number, axes?: readonly number[]): SiteRecord {
+  const moved = (v: readonly number[]): number[] => moveAxes(v, r.shape, k, perm, axes)
   // The covariance of a vector site of shape [k] is a k by k block: both of its axes move.
   const covariance =
-    r.covariance !== undefined && r.mean.length === k ? moveAxes(r.covariance, [k, k], k, perm) : r.covariance
+    r.covariance !== undefined && r.mean.length === k && (axes === undefined || axes.includes(0))
+      ? moveAxes(r.covariance, [k, k], k, perm)
+      : r.covariance
   let probs: number[] | undefined
-  if (r.probs !== undefined) {
-    const rows = r.probs.length / k
+  // a categorical site over `k` categories: its probabilities are `rows` rows of `k` (another category count is no component axis)
+  const rows = r.shape.reduce((a, b) => a * b, 1)
+  if (r.probs !== undefined && r.probs.length === rows * k) {
     probs = toFlat(take(reshape(tensor(r.probs), [rows, k]), argsort(tensor(perm)), 1))
   }
   if (probs !== undefined) {
     // The index of a categorical site is a label: its mean and variance are those of the relabelled probabilities.
-    const rows = probs.length / k
     const labels = arange(k)
     const p = reshape(tensor(probs), [rows, k])
     const m = matmul(p, labels)
@@ -87,11 +160,23 @@ export function relabelRecord(r: SiteRecord, perm: readonly number[], k: number)
 
 /**
  * The site that sorts the components: the first (in the order of `sites`) whose shape is the vector of `k` components and whose
- * belief is a continuous one (a vector of rates or locations), or undefined when there is none.
+ * belief is a continuous one (a vector of rates or locations), or undefined when there is none. With the model's `axesOf`, a vector
+ * whose axis is not a component axis (a location of a two-dimensional observation, when there are two components) is not a key.
  */
-export function orderingSite(sites: Readonly<Record<string, SiteRecord>>, k: number): string | undefined {
+export function orderingSite(
+  sites: Readonly<Record<string, SiteRecord>>,
+  k: number,
+  axesOf?: ComponentAxes,
+): string | undefined {
   for (const [name, r] of Object.entries(sites))
-    if (r.shape.length === 1 && r.shape[0] === k && r.kind !== 'categorical' && r.kind !== 'moments') return name
+    if (
+      r.shape.length === 1 &&
+      r.shape[0] === k &&
+      r.kind !== 'categorical' &&
+      r.kind !== 'moments' &&
+      (axesOf?.(name)?.includes(0) ?? true)
+    )
+      return name
   return undefined
 }
 
@@ -107,11 +192,12 @@ export function canonicalSites(
   sites: Readonly<Record<string, SiteRecord>>,
   key: string,
   k: number,
+  axesOf?: ComponentAxes,
 ): Record<string, SiteRecord> {
   const keyed = sites[key]
   if (keyed === undefined) return { ...sites }
   const perm = sortingPermutation(keyed, k)
   const out: Record<string, SiteRecord> = {}
-  for (const [name, r] of Object.entries(sites)) out[name] = relabelRecord(r, perm, k)
+  for (const [name, r] of Object.entries(sites)) out[name] = relabelRecord(r, perm, k, axesOf?.(name))
   return out
 }
