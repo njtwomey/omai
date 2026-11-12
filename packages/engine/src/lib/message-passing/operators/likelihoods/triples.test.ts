@@ -272,7 +272,7 @@ describe('likelihood-triple: tilted moments and log evidence against a brute-for
       'categories',
     ])
   })
-  it('the mean field of the Student-t sends a finite message to each port, the ordinal says why it has none', () => {
+  it('the mean field of the Student-t sends a finite message to each port, the ordinal does for its first and last category and says why it has none between two cuts', () => {
     const params = { likelihood: 'student-t-full', y: 1.2 }
     const args = [cavity(0.3, 0.8), cavity(-0.6, 0.4), cavity(0.8, 0.5)]
     for (const to of [0, 1, 2]) {
@@ -283,6 +283,15 @@ describe('likelihood-triple: tilted moments and log evidence against a brute-for
     expect(Number.isFinite(op.logEvidence?.({ mode: 'vmp', to: 0, args, params, power: 1 }))).toBe(true)
     expect(op.unsupported?.('vmp', { likelihood: 'ordinal-probit-cuts', y: 1, categories: 3 })).toMatch(/out of order/)
     expect(op.unsupported?.('vmp', params)).toBeUndefined()
+    // The first and the last category have one cut and a smooth density: they run (a message to each port, the unused cut included).
+    for (const y of [0, 2]) {
+      const ordinal = { likelihood: 'ordinal-probit-cuts', y, categories: 3 }
+      expect(op.unsupported?.('vmp', ordinal)).toBeUndefined()
+      for (const to of [0, 1, 2]) {
+        const message = op.vmp?.({ mode: 'vmp', to, args, params: ordinal, power: 1 }).message ?? []
+        expect(message.every(Number.isFinite)).toBe(true)
+      }
+    }
     expect(op.unsupported?.('ep', { likelihood: 'ordinal-probit-cuts', y: 1, categories: 3 })).toBeUndefined()
   })
 })

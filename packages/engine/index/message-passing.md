@@ -192,7 +192,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 - function `likelihoodSite`: A numeric EP likelihood site from a registry of log densities. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:361` `omai-engine/message-passing`
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/likelihoods/numeric.ts:90` `omai-engine/message-passing`
 - function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/pairs.ts:291` `omai-engine/message-passing`
-- function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:376` `omai-engine/message-passing`
+- function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:384` `omai-engine/message-passing`
 
 - structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:364` `omai-engine/message-passing`
 - structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/likelihoods/functions.ts:550` `omai-engine/message-passing`
@@ -207,7 +207,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 
 - table `likelihoods`: The numeric likelihoods of a Gaussian predictor (count, survival, ordinal, quantile, robust) by name. `src/lib/message-passing/operators/likelihoods/likelihoods.ts:290` `omai-engine/message-passing`
 - table `pairLikelihoods`: The likelihoods over two random scalars (Laplace scale, Student-t degrees of freedom or scale, Weibull shape, beta shapes). `src/lib/message-passing/operators/likelihoods/pairs.ts:244` `omai-engine/message-passing`
-- table `tripleLikelihoods`: The likelihoods over three random scalars (Student-t location, scale and df; ordinal with random cut points). `src/lib/message-passing/operators/likelihoods/triples.ts:331` `omai-engine/message-passing`
+- table `tripleLikelihoods`: The likelihoods over three random scalars (Student-t location, scale and df; ordinal with random cut points). `src/lib/message-passing/operators/likelihoods/triples.ts:339` `omai-engine/message-passing`
 - table `unaryFunctions`: The unary functions of a Gaussian variable (exp, square, tanh, relu, softplus, abs, sigmoid, sqrt, recip) by name. `src/lib/message-passing/operators/likelihoods/functions.ts:57` `omai-engine/message-passing`
 
 ### message-passing/operators/links
@@ -217,7 +217,7 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 - structure `greaterThan`: The comparison b = [x > threshold] of a Gaussian: truncated-Gaussian moment matching. `src/lib/message-passing/operators/links/truncation.ts:139` `omai-engine/message-passing`
 - structure `isBetween`: The interval test b = [lower < x < upper] of a Gaussian. `src/lib/message-passing/operators/links/truncation.ts:162` `omai-engine/message-passing`
 - structure `logistic`: The logistic link b | x ~ Bernoulli(sigmoid(x)): quadrature EP, Jaakkola bound VMP. `src/lib/message-passing/operators/links/links.ts:52` `omai-engine/message-passing`
-- structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/links/multiclass.ts:251` `omai-engine/message-passing`
+- structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/links/multiclass.ts:307` `omai-engine/message-passing`
 - structure `probit`: The probit link b | x ~ Bernoulli(Phi(x)): exact EP site updates. `src/lib/message-passing/operators/links/truncation.ts:252` `omai-engine/message-passing`
 - structure `spin`: The spin factor x in {-1, +1} with a field, exact EP. `src/lib/message-passing/operators/links/spin.ts:37` `omai-engine/message-passing`
 

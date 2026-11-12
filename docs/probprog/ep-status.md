@@ -18,7 +18,7 @@ The registry (`defaultOperators()`) holds **69** factor operators. Rules by mess
 
 ## Atoms
 
-**97** atoms (65 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **97** of them. Variational message passing runs **86** (85 to a fixed point); **11** run under EP and not under VMP.
+**97** atoms (65 basic, 32 with unknown parameters learned from simulated data). Expectation propagation runs **97** of them. Variational message passing runs **88** (87 to a fixed point); **9** run under EP and not under VMP.
 
 | family | atoms | learned twins | EP runs | VMP runs |
 | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ The registry (`defaultOperators()`) holds **69** factor operators. Rules by mess
 | gate weights | 4 | 0 | 4 | 4 |
 | gates | 16 | 6 | 16 | 13 |
 | kernels | 2 | 1 | 2 | 0 |
-| likelihoods | 31 | 17 | 31 | 27 |
+| likelihoods | 31 | 17 | 31 | 29 |
 | nonparametric | 2 | 0 | 2 | 2 |
 | priors | 17 | 0 | 17 | 17 |
 | scales | 7 | 2 | 7 | 7 |
@@ -77,7 +77,7 @@ EP refuses nothing in the suite today: every atom and every benchmark model runs
 | grid-hyperparameters: Hyperparameters on a grid: a few scalars, one family at a time | missing-mapping | open | medium | - |
 | matrix-larger: Covariance matrices beyond what the Wishart and the bivariate sd-and-correlation sites reach | missing-rule | open | medium | - |
 | correlation-strong-few-pairs: A strong bivariate correlation from few pairs: the beta belief is too narrow | quality | open | medium | - |
-| softmax-many-classes: Softmax beyond six classes: the variational rule, the probit with a power, correlated classes | missing-rule | open | small | - |
+| softmax-many-classes: Softmax beyond six classes: the probit with a power, correlated classes | missing-rule | open | small | - |
 | multimodal: One Gaussian per variable cannot show two modes: what the multi-start does not reach | quality | open | medium | - |
 | loopy-overconfidence: Loops make the spreads too small | quality | open | medium | - |
 | sv-parameters: Stochastic volatility with an unknown level, persistence and innovation precision: the level is too wide, hard fits do not settle | quality | open | small | - |
