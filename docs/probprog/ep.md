@@ -92,13 +92,41 @@ one file per family) and from the references.
 | --- | --- | --- |
 | `epSpecMethod(bound)` (`ep`) | plain EP on the compiled graph; a step is a sweep, a factor or a message by `granularity`; also fractional EP by `power` | the model compiles and every operator has an EP rule |
 | `epGridMethod(bound)` (`ep-grid`) | EP inside a grid over scalar hyperparameters that a custom function reads (a Gaussian process length scale): each node conditions the model, EP runs, the EP evidence weights the node | plain EP refuses because a custom function reads a random scalar |
-| `epMultiStartMethod(bound)` (`ep-multistart`) | EP from several starts of the discrete messages (random, one excluded category each, relabellings), the distinct fixed points weighted by their evidence | a model with discrete latents whose posterior has several readings; chosen by the person |
+| `epMultiStartMethod(bound)` (`ep-multistart`) | EP from several starts of the discrete messages (random, one excluded category each, relabellings; set on the port of each label's prior and held for three damped sweeps), the distinct fixed points weighted by their evidence (`diagnostics.modeWeights`) | a model with discrete latents whose posterior has several readings; chosen by the person |
 | `vmpSpecMethod`, `bpSpecMethod` | the variational and the sum-product settings of the same engine | likewise |
 
 `epRoute(bound)` (`inference/ep-route.ts`) is the one place that chooses between plain EP and EP in a grid: it returns `{ via, verdict,
 method }` with `via` one of `ep`, `ep-grid` and `none` (refused; the verdict is plain EP's). `atomRun`, `atomVerdict` and `epCoverage` call
 it, so the suite, the coverage and the code a page shows agree on what ran. The multi-start method is not on the route: it answers a
 different question and is the user's call. No other method chooses for the user.
+
+**Reporting a multimodal posterior.** One EP run commits to one reading and reports the spread of that reading alone. `epMultiStartMethod`
+is the route that reports the others: the posterior is the mixture of the distinct fixed points (runs whose site means agree within
+`merge` of the larger sd are one), each weighted by its EP evidence, which for modes that are apart is their share of the mass, and
+the evidence of the model is the log sum. It has been held to references where the mode weights are known: the clutter problem's
+bimodal location against its quadrature, a two-cluster mean with unequal priors against the enumeration of the assignments, and the
+mixture of the benchmarks with symmetric priors (`ep-multistart-modes.test.ts`; the numbers are in the gap `multimodal` and the changelog).
+The weights are only as good as the fixed points found: modes that overlap are one fixed point, a regime that few steps visit is not
+a relabelling of the reading EP finds, and a symmetry of continuous variables (the sign of a loading) has no discrete message to start from.
+The `labels` knob chooses how the labelled components are read. `keep` (the default) is the posterior of the model as written: with
+unequal priors it gives the exact moments of each labelled mean (a two-cluster mean against the enumeration: the means within 0.02 sd and the
+sds within 1% of the exact ones). `sort` reads the components in order of the first vector of parameters (the low, the middle and the
+high regime: what a data-ordered sampler reports, and what a page that names regimes shows). `permute` is `keep` with a start from every
+relabelling of each reading found.
+
+Measured on the changepoint program (8 seeds, 3 rates each, 12 starts, the data-ordered Gibbs sampler of the page as the reference; the truth
+inside the 90% interval, the spread over the sampler's, mean and median): `keep` 0.958 and 3.2 (median 2.2), `permute` 0.958 and 3.6
+(3.2), `sort` 0.917 and 0.72 (0.92), one run 0.778 over 24 seeds earlier (the spread 0.69 of the sampler's, median 0.94); time 75, 57 and 60 s for the
+eight seeds (24 starts: 335, 760 and 337 s for 24 seeds earlier, so `permute` costs up to twice as much when the relabellings
+are many). `keep` and `permute` are wide because they are the posterior of the labelled model (the labels carry the priors' names and
+the posterior of "regime 0" is a mixture over the labellings the priors allow); `sort` is as wide as the sampler where every regime is
+visited. A labelling with 2% of the mass (a two-cluster mean with a strong asymmetric prior, exact weight 0.0197) was missed by 12
+random starts under `keep` and found, with its exact weight, under `permute`: the relabelling is what makes the weights of the
+labellings reliable, the random starts only reach them by chance. Recommendation: keep `keep` as the default (its answer is the exact marginal
+of the model as written); use `sort` for a model whose
+components are exchangeable up to their parameters and whose page shows "the low, the middle, the high one", and `permute` when the weight
+of the less likely labellings matters. Changing the default to `sort` is the owner's choice; it would change what a site named `rate[0]`
+means in every multi-start result.
 
 A method that runs several EP runs (a grid node, a start) shares the compile step with plain EP through `prepare` (`_support.ts`) and
 the run knobs below.
