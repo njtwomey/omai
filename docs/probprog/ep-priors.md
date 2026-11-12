@@ -5,8 +5,8 @@ carry, the hyperprior one level above, how to write it in the model layer, the f
 Statuses are the library's own verdicts (each `runs` row has an atom page, or a test, that ran it against an exact or brute-force
 reference; `ep-changelog.md` has the history of the rules). The atoms this atlas names are checked against the coverage by
 `make ep-report-check` (it fails when one does not run), and `ep-status.md` (generated) has the counts; the status words in the rows
-are still written by hand, so a row that says `planned` is where to look when a rule lands. The atoms are `packages/engine/src/lib/probprog/ep/ep-atoms-priors.ts` and
-`ep-atoms-weights.ts`; their pages are in the `expectation-propagation` group of the pocs (`ep-<atom name>`), and each ends with the
+are still written by hand, so a row that says `planned` is where to look when a rule lands. The atoms are `packages/engine/src/lib/probprog/ep/_atoms/priors.ts` and
+`_atoms/weights.ts`; their pages are in the `expectation-propagation` group of the pocs (`ep-<atom name>`), and each ends with the
 model code that ran.
 
 ## How a prior reaches EP

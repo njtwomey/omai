@@ -8,6 +8,7 @@
 
 import { logAddExp } from '../../../base/index.ts'
 import { allProper, etaOf, gaussianSiteMessage, numberParam } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 
@@ -33,24 +34,27 @@ function weights(c: OperatorContext): { plus: number; minus: number } {
  * spin.ep?.({ mode: 'ep', to: 0, args, params: { field: 0.5 }, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.5876', '0.2715']
  * ```
  */
-export const spin: FactorOperator = {
+export const spin: FactorOperator = defineOperator({
   name: 'spin',
   description: 'x in {-1, +1} with weight exp(field x)',
   ports: [{ name: 'x', accepts: ['gaussian'] }],
   params: { field: param.number({ optional: true }) },
-  support: { ep: 'exact' },
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const { plus, minus } = weights(c)
+      const mean = Math.tanh(0.5 * (plus - minus))
+      return { message: gaussianSiteMessage(etaOf(c.args[0] as never), mean, Math.max(1 - mean * mean, 1e-12)) }
+    }),
+  },
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const { plus, minus } = weights(c)
+      return logAddExp(plus, minus)
+    },
+  },
+  traits: { readsTarget: true },
   noRule: {
     vmp: 'the spin is two point masses at plus and minus one: KL(q || p) is infinite for every Gaussian q (use expectation propagation, or a binary variable with a table)',
   },
-  readsTarget: true,
-  ep: (c): OperatorResult => {
-    const { plus, minus } = weights(c)
-    const mean = Math.tanh(0.5 * (plus - minus))
-    return { message: gaussianSiteMessage(etaOf(c.args[0] as never), mean, Math.max(1 - mean * mean, 1e-12)) }
-  },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const { plus, minus } = weights(c)
-    return logAddExp(plus, minus)
-  },
-}
+})

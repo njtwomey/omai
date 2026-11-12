@@ -10,15 +10,16 @@
  * induce, which the marginal per coefficient of the scalar factor cannot.
  */
 
-import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, gaussianSiteMessage, siteMessage } from '../../core/args.ts'
+import { arg, errorText } from '../../core/_messages.ts'
+import { etaOf } from '../../core/args.ts'
+import { defineOperator, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
-import type { FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
+import type { FactorOperator, OperatorContext } from '../../core/types.ts'
 import { gammaLogWindow, windowProfiles } from '../../numerics/_windows.ts'
 import { chainOf, type Step, unaryFunctions } from '../likelihoods/functions.ts'
-import { type VectorScaleTilt, vectorMessageOf, vectorScaleTilt } from './scale.ts'
+import { tiltedVectorOf, type VectorScaleTilt, vectorScaleTilt } from './scale.ts'
 
 /** The functions `u_j` of the parameter `steps`: one chain of steps for each coefficient. */
 function chains(params: Readonly<Record<string, unknown>>): ((x: number) => number)[] {
@@ -96,7 +97,7 @@ function functionScaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: 
  * m?.map((x) => x.toFixed(2)) // => ['0.00', '0.00', '1.00', '0.00', '0.00', '1.00']
  * ```
  */
-export const gaussianMvFunctionScale: FactorOperator = {
+export const gaussianMvFunctionScale: FactorOperator = defineOperator({
   name: 'gaussian-mv-function-scale',
   description: 'beta_j = z_j u_j(x) for a Gaussian vector, standard normal z and one Gaussian or gamma variable x',
   ports: [
@@ -104,8 +105,6 @@ export const gaussianMvFunctionScale: FactorOperator = {
     { name: 'x', accepts: ['gaussian', 'gamma'] },
   ],
   params: { steps: param.any({ example: [['square']] }) },
-  support: { ep: 'numeric' },
-  readsTarget: (to) => to === 1,
   check: (params, families) => {
     try {
       return chains(params).length === families[0]?.dim
@@ -115,14 +114,15 @@ export const gaussianMvFunctionScale: FactorOperator = {
       return errorText(e)
     }
   },
-  ep: (c): OperatorResult => {
-    const t = functionScaleTilt(c)
-    if (c.to === 0) return { message: vectorMessageOf(t, etaOf(arg(c, 0)), 'gaussian-mv-function-scale') }
-    const input = arg(c, 1)
-    if (input.family.kind === 'gamma') return { message: siteMessage(gamma, etaOf(input), [t.logLambda, t.lambda]) }
-    return { message: gaussianSiteMessage(etaOf(input), t.logLambda, Math.max(t.sdLogLambda ** 2, 1e-300)) }
+  rules: {
+    ep: siteRule((c) => {
+      const t = functionScaleTilt(c)
+      if (c.to === 0) return { natural: tiltedVectorOf(t, 'gaussian-mv-function-scale') }
+      const input = arg(c, 1)
+      if (input.family.kind === 'gamma') return { moments: [t.logLambda, t.lambda] }
+      return { mean: t.logLambda, variance: Math.max(t.sdLogLambda ** 2, 1e-300) }
+    }),
   },
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => functionScaleTilt(c).logZ)
-  },
-}
+  evidence: { improperIsNaN: true, ep: (c) => functionScaleTilt(c).logZ },
+  traits: { readsTarget: (to) => to === 1 },
+})

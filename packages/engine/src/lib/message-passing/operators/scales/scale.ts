@@ -9,10 +9,11 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, evidenceOrNaN } from '../../core/_messages.ts'
-import { etaOf, siteMessage, vectorParam } from '../../core/args.ts'
+import { arg } from '../../core/_messages.ts'
+import { etaOf, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Eta, FactorOperator, OperatorContext, OperatorResult } from '../../core/types.ts'
 import { spd } from '../../numerics/_dense.ts'
@@ -210,11 +211,8 @@ function scaleTilt(c: OperatorContext): VectorScaleTilt & { readonly d: number }
   })
 }
 
-/**
- * The message to the vector from a tilted mixture (`vectorScaleTilt`): the dense Gaussian with the mixture's mean and covariance
- * divided by the cavity.
- */
-export function vectorMessageOf(t: VectorScaleTilt & { readonly d: number }, cavity: Eta, what: string): Eta {
+/** The natural parameters of the dense Gaussian with the mean and covariance of a tilted mixture (`vectorScaleTilt`). */
+export function tiltedVectorOf(t: VectorScaleTilt & { readonly d: number }, what: string): Eta {
   const d = t.d
   const cov = Float64Array.from(t.second)
   for (let i = 0; i < d; i++)
@@ -227,7 +225,15 @@ export function vectorMessageOf(t: VectorScaleTilt & { readonly d: number }, cav
     for (let k = 0; k < d; k++) s += (jNew[i * d + k] ?? 0) * (t.mean[k] ?? 0)
     return s
   })
-  return [...hNew, ...Array.from(jNew)].map((v, i) => v - (cavity[i] ?? 0))
+  return [...hNew, ...Array.from(jNew)]
+}
+
+/**
+ * The message to the vector from a tilted mixture (`vectorScaleTilt`): the dense Gaussian with the mixture's mean and covariance
+ * divided by the cavity.
+ */
+export function vectorMessageOf(t: VectorScaleTilt & { readonly d: number }, cavity: Eta, what: string): Eta {
+  return tiltedVectorOf(t, what).map((v, i) => v - (cavity[i] ?? 0))
 }
 
 /**
@@ -251,7 +257,7 @@ export function vectorMessageOf(t: VectorScaleTilt & { readonly d: number }, cav
  * m?.map((x) => x.toFixed(2)) // => ['0.00', '0.00', '1.00', '0.00', '0.00', '1.00']
  * ```
  */
-export const gaussianMvPrecisionScale: FactorOperator = {
+export const gaussianMvPrecisionScale: FactorOperator = defineOperator({
   name: 'gaussian-mv-precision-scale',
   description: 'beta_j ~ N(0, 1 / (s_j lambda + o_j)) for a Gaussian vector and one gamma multiplier lambda',
   ports: [
@@ -259,70 +265,70 @@ export const gaussianMvPrecisionScale: FactorOperator = {
     { name: 'lambda', accepts: ['gamma'] },
   ],
   params: { scale: param.vector(), offset: param.vector({ optional: true }) },
-  support: { ep: 'numeric', vmp: 'exact' },
-  readsTarget: (to) => to === 1,
   check: (params, families) =>
     vectorParam(params, 'scale').length === families[0]?.dim
       ? undefined
       : 'gaussian-mv-precision-scale: scale must have the length of the vector',
-  ep: (c): OperatorResult => {
-    const t = scaleTilt(c)
-    if (c.to === 1) return { message: siteMessage(gamma, etaOf(arg(c, 1)), [t.logLambda, t.lambda]) }
-    return { message: vectorMessageOf(t, etaOf(arg(c, 0)), 'gaussian-mv-precision-scale') }
+  rules: {
+    ep: siteRule((c) => {
+      const t = scaleTilt(c)
+      if (c.to === 1) return { moments: [t.logLambda, t.lambda] }
+      return { natural: tiltedVectorOf(t, 'gaussian-mv-precision-scale') }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const { scale, offset } = precisions(c)
+      const d = scale.length
+      const lambda = arg(c, 1)
+      const meanLambda = lambda.family.moments(etaOf(lambda))[1] ?? 0
+      if (c.to === 0) {
+        const j = new Array<number>(d * d).fill(0)
+        for (let i = 0; i < d; i++) j[i * d + i] = (scale[i] ?? 0) * meanLambda + (offset[i] ?? 0)
+        return { message: [...new Array<number>(d).fill(0), ...j] }
+      }
+      for (let i = 0; i < d; i++)
+        if ((scale[i] ?? 0) > 0 && (offset[i] ?? 0) !== 0)
+          throw new OmaiError(
+            'not-implemented',
+            'gaussian-mv-precision-scale: a coefficient with both a scale and an offset has no variational rule',
+          )
+      const vec = arg(c, 0)
+      const mo = vec.family.moments(etaOf(vec))
+      let active = 0
+      let quad = 0
+      for (let i = 0; i < d; i++) {
+        if ((scale[i] ?? 0) === 0) continue
+        active++
+        quad += (scale[i] ?? 0) * (mo[d + i * d + i] ?? 0)
+      }
+      return { message: [0.5 * active, -0.5 * quad] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const { scale, offset } = precisions(c)
-    const d = scale.length
-    const lambda = arg(c, 1)
-    const meanLambda = lambda.family.moments(etaOf(lambda))[1] ?? 0
-    if (c.to === 0) {
-      const j = new Array<number>(d * d).fill(0)
-      for (let i = 0; i < d; i++) j[i * d + i] = (scale[i] ?? 0) * meanLambda + (offset[i] ?? 0)
-      return { message: [...new Array<number>(d).fill(0), ...j] }
-    }
-    for (let i = 0; i < d; i++)
-      if ((scale[i] ?? 0) > 0 && (offset[i] ?? 0) !== 0)
-        throw new OmaiError(
-          'not-implemented',
-          'gaussian-mv-precision-scale: a coefficient with both a scale and an offset has no variational rule',
-        )
-    const vec = arg(c, 0)
-    const mo = vec.family.moments(etaOf(vec))
-    let active = 0
-    let quad = 0
-    for (let i = 0; i < d; i++) {
-      if ((scale[i] ?? 0) === 0) continue
-      active++
-      quad += (scale[i] ?? 0) * (mo[d + i * d + i] ?? 0)
-    }
-    return { message: [0.5 * active, -0.5 * quad] }
+  evidence: {
+    improperIsNaN: true,
+    ep: (c) => scaleTilt(c).logZ,
+    vmp: (c) => {
+      const { scale, offset } = precisions(c)
+      const d = scale.length
+      const lambda = arg(c, 1)
+      const mo = lambda.family.moments(etaOf(lambda))
+      const vec = arg(c, 0)
+      const m = vec.family.moments(etaOf(vec))
+      let total = -0.5 * d * Math.log(2 * Math.PI)
+      for (let j = 0; j < d; j++) {
+        const s = scale[j] ?? 0
+        const o = offset[j] ?? 0
+        if (s > 0 && o !== 0)
+          throw new OmaiError(
+            'not-implemented',
+            'gaussian-mv-precision-scale: a coefficient with both a scale and an offset has no variational rule',
+          )
+        total +=
+          s > 0
+            ? 0.5 * (Math.log(s) + (mo[0] ?? 0)) - 0.5 * s * (mo[1] ?? 0) * (m[d + j * d + j] ?? 0)
+            : 0.5 * Math.log(o) - 0.5 * o * (m[d + j * d + j] ?? 0)
+      }
+      return total
+    },
   },
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => {
-      return scaleTilt(c).logZ
-    })
-  },
-  expectedLog: (c) => {
-    const { scale, offset } = precisions(c)
-    const d = scale.length
-    const lambda = arg(c, 1)
-    const mo = lambda.family.moments(etaOf(lambda))
-    const vec = arg(c, 0)
-    const m = vec.family.moments(etaOf(vec))
-    let total = -0.5 * d * Math.log(2 * Math.PI)
-    for (let j = 0; j < d; j++) {
-      const s = scale[j] ?? 0
-      const o = offset[j] ?? 0
-      if (s > 0 && o !== 0)
-        throw new OmaiError(
-          'not-implemented',
-          'gaussian-mv-precision-scale: a coefficient with both a scale and an offset has no variational rule',
-        )
-      total +=
-        s > 0
-          ? 0.5 * (Math.log(s) + (mo[0] ?? 0)) - 0.5 * s * (mo[1] ?? 0) * (m[d + j * d + j] ?? 0)
-          : 0.5 * Math.log(o) - 0.5 * o * (m[d + j * d + j] ?? 0)
-    }
-    return total
-  },
-}
+  traits: { readsTarget: (to) => to === 1 },
+})

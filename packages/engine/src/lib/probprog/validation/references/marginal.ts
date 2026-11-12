@@ -1,0 +1,273 @@
+/**
+ * The shape of a reference answer for one number, `ExactMarginal` (moments, density, the range to draw it on), and the closed
+ * forms that make one: a finite mixture of normals, the moments of a mixture, the branch a switch selects, a coin's probability
+ * and the marginal of posterior draws.
+ */
+
+import { normalPdf } from './special.ts'
+
+/** The closed-form marginal of a quantity: its moments and its density. */
+export interface ExactMarginal {
+  readonly mean: number
+  readonly sd: number
+  readonly pdf: (x: number) => number
+  /** The interval the curve is drawn on (default the mean plus or minus eight standard deviations, kept inside the support). */
+  readonly range?: readonly [number, number]
+}
+
+/** One component of a mixture of normals. */
+export interface MixtureComponent {
+  readonly weight: number
+  readonly mean: number
+  readonly sd: number
+}
+
+/**
+ * The marginal of a finite mixture of normals, exactly: its moments from the components and its density as their weighted sum.
+ *
+ * @param components - The weighted components (the weights are normalised).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { mixtureMarginal } from 'omai-engine/probprog/validation'
+ * mixtureMarginal([{ weight: 1, mean: -1, sd: 1 }, { weight: 1, mean: 1, sd: 1 }]).mean // => 0
+ * ```
+ */
+export function mixtureMarginal(components: readonly MixtureComponent[]): ExactMarginal {
+  const total = components.reduce((a, c) => a + c.weight, 0)
+  const parts = components.map((c) => ({ ...c, weight: c.weight / total }))
+  const mean = parts.reduce((a, c) => a + c.weight * c.mean, 0)
+  const second = parts.reduce((a, c) => a + c.weight * (c.sd ** 2 + c.mean ** 2), 0)
+  const sd = Math.sqrt(Math.max(second - mean * mean, 0))
+  const lo = Math.min(...parts.map((c) => c.mean - 5 * c.sd))
+  const hi = Math.max(...parts.map((c) => c.mean + 5 * c.sd))
+  return { mean, sd, pdf: (x) => parts.reduce((a, c) => a + c.weight * normalPdf(x, c.mean, c.sd), 0), range: [lo, hi] }
+}
+
+/**
+ * The branch of a mixture that a switch selects, from the marginal belief of a component that is the selected branch with
+ * probability `p` and its prior otherwise: if `b` is that marginal's mean and sd, the selected branch's moments follow from
+ * the mixture's (`E[x] = p m1 + (1 - p) m0`, `E[x²] = p (s1² + m1²) + (1 - p)(s0² + m0²)`). Exact when `b` has the mixture's
+ * own moments, as an EP message through a gate has.
+ *
+ * @param b - The component's marginal mean and sd.
+ * @param p - The probability that the component is the selected one.
+ * @param prior - The mean and sd the component keeps when it is not selected.
+ * @returns The selected branch's mean and sd, or undefined when `p` is zero or the moments do not make a variance.
+ * @example
+ * ```ts
+ * import { selectedBranch } from 'omai-engine/probprog/validation'
+ * selectedBranch({ mean: 0.5, sd: 1 }, 0.5, { mean: 0, sd: 1 })?.mean // => 1
+ * ```
+ */
+export function selectedBranch(
+  b: { readonly mean: number; readonly sd: number },
+  p: number,
+  prior: { readonly mean: number; readonly sd: number },
+): { readonly mean: number; readonly sd: number } | undefined {
+  if (!(p > 1e-12)) return undefined
+  const m1 = (b.mean - (1 - p) * prior.mean) / p
+  const second = (b.sd ** 2 + b.mean ** 2 - (1 - p) * (prior.sd ** 2 + prior.mean ** 2)) / p
+  const v = second - m1 * m1
+  return v > 0 ? { mean: m1, sd: Math.sqrt(v) } : undefined
+}
+
+/**
+ * The mean and standard deviation of a mixture of Gaussians: what a single Gaussian that matches its moments has.
+ *
+ * @param branches - The weighted branches (the weights are normalised).
+ * @returns The mean and sd.
+ * @example
+ * ```ts
+ * import { momentMatch } from 'omai-engine/probprog/validation'
+ * momentMatch([{ weight: 1, mean: -1, sd: 0 }, { weight: 1, mean: 1, sd: 0 }]).sd // => 1
+ * ```
+ */
+export function momentMatch(branches: readonly { weight: number; mean: number; sd: number }[]): {
+  mean: number
+  sd: number
+} {
+  const total = branches.reduce((a, c) => a + c.weight, 0)
+  const mean = branches.reduce((a, c) => a + (c.weight / total) * c.mean, 0)
+  const second = branches.reduce((a, c) => a + (c.weight / total) * (c.sd ** 2 + c.mean ** 2), 0)
+  return { mean, sd: Math.sqrt(Math.max(second - mean * mean, 0)) }
+}
+
+/** The joint of two quantities on a grid, for contours. */
+export interface RefJoint {
+  readonly a: string
+  readonly b: string
+  readonly x: readonly number[]
+  readonly y: readonly number[]
+  readonly p: readonly (readonly number[])[]
+}
+
+/**
+ * The marginal of a probability (the exact probability that a switch is on): its value and its spread as a coin, with no density
+ * (a probability is checked on its mean, not drawn).
+ *
+ * @param p - The probability.
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { probabilityMarginal } from 'omai-engine/probprog/validation'
+ * probabilityMarginal(0.5).sd // => 0.5
+ * ```
+ */
+export const probabilityMarginal = (p: number): ExactMarginal => ({ mean: p, sd: Math.sqrt(p * (1 - p)), pdf: () => 0 })
+
+/**
+ * The marginal of a quantity from posterior draws: the sample mean and sd, and a Gaussian kernel density estimate (Silverman's
+ * bandwidth), over the range the draws cover.
+ *
+ * @param draws - The draws.
+ * @returns The marginal.
+ * @concept posterior-validation
+ * @example
+ * ```ts
+ * import { samplesMarginal } from 'omai-engine/probprog/validation'
+ * samplesMarginal([0, 1, 2, 3, 4]).mean // => 2
+ * ```
+ */
+export function samplesMarginal(draws: readonly number[]): ExactMarginal {
+  const n = draws.length
+  const mean = draws.reduce((a, b) => a + b, 0) / n
+  const sd = Math.sqrt(draws.reduce((a, b) => a + (b - mean) ** 2, 0) / n)
+  const h = Math.max(1.06 * sd * n ** -0.2, 1e-9)
+  // Thinned, so the density costs a few hundred kernels, not thousands.
+  const stride = Math.max(1, Math.floor(n / 400))
+  const kept = draws.filter((_, i) => i % stride === 0)
+  return {
+    mean,
+    sd,
+    pdf: (x) => kept.reduce((a, c) => a + normalPdf(x, c, h), 0) / kept.length,
+    range: [Math.min(...draws) - 2 * h, Math.max(...draws) + 2 * h],
+  }
+}
+
+/**
+ * How the density of a weighted marginal is read off its points: `cell` (equally spaced points: the weight of the nearest
+ * index over the spacing, a piecewise-constant density; points with under 1e-6 of the top weight are outside the range, which
+ * is padded by a step), `nearest` (any spacing: the weight of the nearest point over its cell, half the distance between its
+ * neighbours; under 1e-5 of the top weight is outside the range) and `linear` (the density at each point is its mass over its
+ * cell, interpolated between points, zero outside them; the range is where it exceeds 1e-5 of its top).
+ */
+export type WeightedDensity = 'cell' | 'nearest' | 'linear'
+
+/**
+ * The marginal of a quantity from weights on a grid of points (a density summed over every other coordinate, or a posterior
+ * over a hyperparameter): the moments of the weights and a density read off the points as `density` says.
+ *
+ * @param points - The grid points, ascending.
+ * @param weights - The weight of each point (not normalised).
+ * @param density - How the density is read off the points (default `cell`).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { weightedMarginal } from 'omai-engine/probprog/validation'
+ * weightedMarginal([0, 1, 2], [1, 2, 1]).mean // => 1
+ * ```
+ */
+export function weightedMarginal(
+  points: readonly number[],
+  weights: readonly number[],
+  density: WeightedDensity = 'cell',
+): ExactMarginal {
+  const z = weights.reduce((a, b) => a + b, 0)
+  const mean = points.reduce((a, x, i) => a + (x * (weights[i] as number)) / z, 0)
+  const sd = Math.sqrt(points.reduce((a, x, i) => a + ((x - mean) ** 2 * (weights[i] as number)) / z, 0))
+  const first = points[0] as number
+  const last = points[points.length - 1] as number
+  if (density === 'cell') {
+    const step = (points[1] as number) - first
+    const top = Math.max(...weights)
+    const live = points.filter((_, i) => (weights[i] as number) > 1e-6 * top)
+    return {
+      mean,
+      sd,
+      pdf: (x) => {
+        const i = Math.round((x - first) / step)
+        return i < 0 || i >= points.length ? 0 : (weights[i] as number) / z / step
+      },
+      range: [Math.min(...live) - step, Math.max(...live) + step],
+    }
+  }
+  if (density === 'nearest') {
+    const live = points.filter((_, i) => (weights[i] as number) > 1e-5 * Math.max(...weights))
+    return {
+      mean,
+      sd,
+      pdf: (x) => {
+        let nearest = 0
+        for (let i = 1; i < points.length; i++)
+          if (Math.abs((points[i] as number) - x) < Math.abs((points[nearest] as number) - x)) nearest = i
+        const left = points[Math.max(0, nearest - 1)] as number
+        const right = points[Math.min(points.length - 1, nearest + 1)] as number
+        return (weights[nearest] as number) / z / ((right - left) / 2)
+      },
+      range: [Math.min(...live), Math.max(...live)],
+    }
+  }
+  // The density at a grid point: its mass over the width of its cell (in the variable's own units).
+  const dens = points.map((p, i) => {
+    const prev = points[i - 1] ?? p - ((points[1] as number) - p)
+    const next = points[i + 1] ?? p + (p - (points[i - 1] as number))
+    return (weights[i] as number) / z / ((next - prev) / 2)
+  })
+  const top = Math.max(...dens)
+  const live = points.filter((_, i) => (dens[i] as number) > 1e-5 * top)
+  return {
+    mean,
+    sd,
+    pdf: (x) => {
+      if (x <= first || x >= last) return 0
+      let lo = 0
+      while ((points[lo + 1] as number) < x) lo++
+      const t = (x - (points[lo] as number)) / ((points[lo + 1] as number) - (points[lo] as number))
+      return (1 - t) * (dens[lo] as number) + t * (dens[lo + 1] as number)
+    },
+    range: [Math.min(...live), Math.max(...live)],
+  }
+}
+
+/** One node of a mixture over a grid: its weight (the weights sum to one), and the Gaussian (mean, variance) or other density a quantity has there. */
+export interface MixturePart {
+  readonly weight: number
+  readonly mean: number
+  readonly variance: number
+  /** The density at the node (default the Gaussian of the node's mean and variance). */
+  readonly pdf?: (x: number) => number
+}
+
+/**
+ * The marginal of a quantity that, given the nodes of a grid over what it depends on (a hyperparameter, the entries of a
+ * covariance), has a known mean and variance and density: the mixture of those over the nodes' weights, with the mixture's
+ * moments from the total-variance formula and its density as the weighted sum.
+ *
+ * @param parts - The nodes, with weights that sum to one.
+ * @param range - The interval to draw on, from the mixture's mean and sd (default none: the mean plus or minus eight sd).
+ * @returns The marginal.
+ * @example
+ * ```ts
+ * import { gaussianMixtureMarginal } from 'omai-engine/probprog/validation'
+ * gaussianMixtureMarginal([{ weight: 0.5, mean: -1, variance: 1 }, { weight: 0.5, mean: 1, variance: 1 }]).sd // => 1.4142135623730951
+ * ```
+ */
+export function gaussianMixtureMarginal(
+  parts: readonly MixturePart[],
+  range?: (mean: number, sd: number) => readonly [number, number],
+): ExactMarginal {
+  const mean = parts.reduce((a, p) => a + p.weight * p.mean, 0)
+  const second = parts.reduce((a, p) => a + p.weight * (p.variance + p.mean ** 2), 0)
+  const sd = Math.sqrt(Math.max(second - mean * mean, 0))
+  const density = (p: MixturePart, x: number): number =>
+    p.pdf === undefined
+      ? (p.weight * Math.exp((-0.5 * (x - p.mean) ** 2) / p.variance)) / Math.sqrt(2 * Math.PI * p.variance)
+      : p.weight * p.pdf(x)
+  return {
+    mean,
+    sd,
+    pdf: (x) => parts.reduce((a, p) => a + density(p, x), 0),
+    ...(range === undefined ? {} : { range: range(mean, sd) }),
+  }
+}

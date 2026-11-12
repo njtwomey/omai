@@ -33,7 +33,8 @@ export type EpRoute =
  * @example
  * ```ts
  * import { epRoute } from 'omai-engine/probprog/inference'
- * import { gaussianAtom, atomBound } from 'omai-engine/probprog/ep'
+ * import { atomBound, epAtom } from 'omai-engine/probprog/ep'
+ * const gaussianAtom = epAtom('gaussian')
  * epRoute(atomBound(gaussianAtom.problem(gaussianAtom.defaults))).via // => 'ep'
  * ```
  */

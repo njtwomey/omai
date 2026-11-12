@@ -1,7 +1,7 @@
 /**
  * The engine: arguments and cavities, the dispatch to an operator, the repair of improper messages, evidence, the
- * verdict and the restarts, and the steppable `Algorithm` that runs expectation propagation, variational message passing
- * and belief propagation as settings of one loop; with the projection slot (`projections.ts`) and the schedule slot
+ * verdict and the restarts, and the steppable `Algorithm` that runs expectation propagation and variational message passing
+ * as settings of one loop (and the sum-product rule of the four operators that have one); with the projection slot (`projections.ts`) and the schedule slot
  * (`schedules.ts`) it takes. Part of `omai-engine/message-passing`.
  *
  * @inline

@@ -1,149 +1,86 @@
 /**
  * The registry of the library's factor operators, as one explicit call: `defaultOperators()` returns them by name, so a
  * page that imports only what it needs pulls only that, and a graph is compiled against the collection it is given
- * (the library's, a subset, or the library's with operators of your own added).
+ * (the library's, a subset, or the library's with operators of your own added). Each folder lists its own operators
+ * (`list.ts`); the registration order is `operatorNames` (`names.ts`), and the registry refuses a name that two operators
+ * share, an operator the names do not list and a name that no operator has.
  */
 
+import { ParameterError } from '../core/errors.ts'
 import type { FactorOperator } from '../core/types.ts'
-import { mvnSdCorr } from './covariance/correlation.ts'
-import { mvnNormalWishart, mvnWishart } from './covariance/covariance.ts'
-import {
-  bernoulliBeta,
-  binomial,
-  discreteDirichlet,
-  gammaObserved,
-  mixtureWeight,
-  negativeBinomialBeta,
-  poisson,
-} from './discrete/conjugate.ts'
-import { gaussianMixture, select, table } from './discrete/discrete.ts'
+import { covarianceOperatorList } from './covariance/list.ts'
 import { gateOperator } from './discrete/gate.ts'
-import { maximum, minimum } from './gaussian/extremum.ts'
-import {
-  equal,
-  gaussianGammaPrecision,
-  gaussianLogScale,
-  gaussianNormalGamma,
-  gaussianOperator,
-  prior,
-  product,
-} from './gaussian/gaussian.ts'
-import {
-  difference,
-  dotConstant,
-  gaussianJoint,
-  linear,
-  linearRegressionRow,
-  matmulConstant,
-  plus,
-  sum,
-  timesConstant,
-} from './gaussian/linear.ts'
-import { gaussianScale } from './gaussian/log-scale.ts'
-import { gaussianTransition } from './gaussian/transition.ts'
-import { linearRegressionPlate, logisticPlate, probitPlate } from './lifts/plates.ts'
-import { logisticRow, probitRow, spinRow } from './lifts/rows.ts'
-import { apply, applyProductOperator } from './likelihoods/functions.ts'
-import { likelihoodRowOperator, likelihoodSiteOperator, negativeBinomialDispersion } from './likelihoods/likelihoods.ts'
-import { likelihoodPairOperator } from './likelihoods/pairs.ts'
-import { priorSite } from './likelihoods/prior-sites.ts'
-import { laplaceRow, laplaceSite, mixtureRow, mixtureSite, studentTRow, studentTSite } from './likelihoods/robust.ts'
-import { logistic } from './links/links.ts'
-import { multiclassSite } from './links/multiclass.ts'
-import { spin } from './links/spin.ts'
-import { greaterThan, isBetween, probit } from './links/truncation.ts'
-import { betaTwoShapes, dirichletConcentration } from './scales/concentration.ts'
-import { gaussianMvFunctionScale } from './scales/function-scale.ts'
-import { gammaProduct, gammaRate } from './scales/gamma-scale.ts'
-import { gaussianMvPrecisionScale } from './scales/scale.ts'
-import { stickBreaking } from './scales/stick-breaking.ts'
+import { discreteOperatorList } from './discrete/list.ts'
+import { gaussianOperatorList } from './gaussian/list.ts'
+import { liftOperatorList } from './lifts/list.ts'
+import { likelihoodOperatorList } from './likelihoods/list.ts'
+import { linkOperatorList } from './links/list.ts'
+import { operatorNames } from './names.ts'
+import { scaleOperatorList } from './scales/list.ts'
 
 /**
- * The library's factor operators by name: `prior`, `gaussian`, `gaussian-gamma-precision`, `gaussian-log-scale`, `gaussian-normal-gamma`,
- * `product`, `max`, `min`, `equal`, `linear`, `plus`, `difference`, `times-constant`, `sum`, `dot-constant`, `matmul-constant`,
- * `linear-regression-row`, `gaussian-joint`, `probit`, `greater-than`, `is-between`, `logistic`, `bernoulli`,
- * `discrete`, `poisson`, `binomial`, `gamma-observed`, `negative-binomial-beta`, `mixture-weight`, `table`, `select`, `gaussian-mixture`, the regression rows `probit-row` and `logistic-row`, the plates of rows `linear-regression-plate`, `probit-plate` and `logistic-plate`, the
- * spin site `spin` and its row `spin-row`, and the robust sites `mixture-site`, `student-t-site` and `laplace-site` with their rows `mixture-row`, `student-t-row` and `laplace-row`, the shared smoothing parameter of a Gaussian vector `gaussian-mv-precision-scale` (and `gaussian-mv-function-scale`, the same for coefficients `z_j u_j(x)` of a Gaussian or gamma variable: the non-centred form), the gamma scale hierarchies `gamma-rate` and `gamma-product`, the random concentration of a beta or Dirichlet `dirichlet-concentration` and a beta with two random shapes `beta-two-shapes`, the stick-breaking assignment of a truncated Dirichlet process `stick-breaking`, the Gaussian vector step of a linear dynamical system `gaussian-transition`, the multivariate Gaussian with a Wishart precision matrix `mvn-wishart`, its normal-Wishart conjugate form `mvn-normal-wishart` and the bivariate Gaussian with two gamma precisions and a beta correlation `mvn-sd-corr`, the Gaussian with a random log scale and mean `gaussian-scale`, the negative binomial with a random log dispersion `negative-binomial-dispersion`, the two-variable likelihood sites `likelihood-pair` (a registry: Laplace with a random scale, Student-t with random degrees of freedom, Weibull with a random shape, beta with two random shapes), the multiclass categorical with softmax or multinomial-probit probabilities `multiclass-site`, the unary function `apply` (`exp`, `square`, `tanh`, `relu`, `softplus`, `abs`, `sigmoid`, `sqrt`, `recip`, or a chain of them, of a Gaussian or gamma variable) and its product with a Gaussian `apply-product` (a non-centred scale), and the exact numeric prior `prior-site` (half-normal, half-Cauchy, uniform, truncated normal), the generic numeric likelihood `likelihood-site` with its row `likelihood-row` (a registry of count, survival, ordinal, quantile and robust likelihoods), and the `gate` of Minka and Winn (a discrete variable selects among branches that are operators of this registry). A new object each call, so a caller may
- * add its own (`{ ...defaultOperators(), mine }`).
+ * Operators keyed by name in a given order, refusing a registry that disagrees with its own list.
+ *
+ * @param operators - The operators, in any order.
+ * @param names - The names in the order of the result.
+ * @returns The operators by name, in the order of `names`.
+ * @throws ParameterError when two operators have one name, an operator is not in `names`, or a name has no operator.
+ * @example
+ * ```ts
+ * import { collectOperators, prior, equal } from 'omai-engine/message-passing'
+ * Object.keys(collectOperators([equal, prior], ['prior', 'equal'])) // => ['prior', 'equal']
+ * ```
+ */
+export function collectOperators(
+  operators: readonly FactorOperator[],
+  names: readonly string[],
+): Record<string, FactorOperator> {
+  const byName = new Map<string, FactorOperator>()
+  for (const op of operators) {
+    if (byName.has(op.name)) throw new ParameterError(`registry: two operators are named '${op.name}'`)
+    byName.set(op.name, op)
+  }
+  const registry: Record<string, FactorOperator> = {}
+  for (const name of names) {
+    const op = byName.get(name)
+    if (op === undefined) throw new ParameterError(`registry: the names list '${name}' and no operator has it`)
+    registry[name] = op
+    byName.delete(name)
+  }
+  const [unlisted] = byName.keys()
+  if (unlisted !== undefined)
+    throw new ParameterError(`registry: the operator '${unlisted}' is not in the list of names`)
+  return registry
+}
+
+/**
+ * The library's factor operators by name, in the order of `operatorNames` (the gate, which runs the others as its branches, last).
+ * A new object each call, so a caller may add its own (`{ ...defaultOperators(), mine }`). A registry that disagrees with its own list
+ * (two operators with one name, an operator not in `operatorNames`, a name with no operator) throws: it is a bug, not a configuration.
  *
  * @returns The operators, keyed by their names.
  * @concept factor-operators
  * @index table The library's factor operators by name.
  * @example
  * ```ts
- * import { defaultOperators } from 'omai-engine/message-passing'
+ * import { defaultOperators, operatorNames } from 'omai-engine/message-passing'
  * Object.keys(defaultOperators()).includes('probit') // => true
+ * Object.keys(defaultOperators()).length === operatorNames.length // => true
  * ```
  */
 export function defaultOperators(): Record<string, FactorOperator> {
-  const all: FactorOperator[] = [
-    prior,
-    gaussianOperator,
-    gaussianGammaPrecision,
-    gaussianLogScale,
-    gaussianNormalGamma,
-    product,
-    maximum,
-    minimum,
-    equal,
-    linear,
-    plus,
-    difference,
-    timesConstant,
-    sum,
-    dotConstant,
-    matmulConstant,
-    linearRegressionRow,
-    gaussianJoint,
-    probit,
-    greaterThan,
-    isBetween,
-    logistic,
-    bernoulliBeta,
-    discreteDirichlet,
-    poisson,
-    binomial,
-    gammaObserved,
-    negativeBinomialBeta,
-    mixtureWeight,
-    table,
-    select,
-    gaussianMixture,
-    probitRow,
-    logisticRow,
-    linearRegressionPlate,
-    probitPlate,
-    logisticPlate,
-    spin,
-    spinRow,
-    mixtureSite,
-    mixtureRow,
-    studentTSite,
-    studentTRow,
-    laplaceSite,
-    laplaceRow,
-    likelihoodSiteOperator,
-    likelihoodRowOperator,
-    priorSite,
-    apply,
-    applyProductOperator,
-    gaussianScale,
-    negativeBinomialDispersion,
-    likelihoodPairOperator,
-    multiclassSite,
-    gaussianMvPrecisionScale,
-    gaussianMvFunctionScale,
-    gammaRate,
-    gammaProduct,
-    dirichletConcentration,
-    betaTwoShapes,
-    stickBreaking,
-    gaussianTransition,
-    mvnWishart,
-    mvnNormalWishart,
-    mvnSdCorr,
-  ]
-  const registry: Record<string, FactorOperator> = Object.fromEntries(all.map((o) => [o.name, o]))
+  const registry = collectOperators(
+    [
+      ...gaussianOperatorList,
+      ...linkOperatorList,
+      ...discreteOperatorList,
+      ...liftOperatorList,
+      ...likelihoodOperatorList,
+      ...scaleOperatorList,
+      ...covarianceOperatorList,
+    ],
+    operatorNames.filter((name) => name !== 'gate'),
+  )
   // The gate runs any operator of the registry as a branch, itself included (gates nest).
   registry['gate'] = gateOperator(registry)
   return registry

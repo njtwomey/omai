@@ -11,6 +11,7 @@
 import { OmaiError } from '../../../base/index.ts'
 import { arg, evidenceOrNaN } from '../../core/_messages.ts'
 import { rawSum, siteMessage, vectorOf } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError } from '../../core/errors.ts'
 import { normalWishart, wishart, wishartParams } from '../../core/families-matrix.ts'
 import { gaussianMvEta } from '../../core/families-vector.ts'
@@ -236,7 +237,7 @@ function expectedOuter(c: OperatorContext, d: number): { readonly mean: number[]
  * mvnWishart.ep?.({ mode: 'ep', to: 2, args, params: {}, power: 1 }).message // => [0.5, -0.5, 1, 1, -2]
  * ```
  */
-export const mvnWishart: FactorOperator = {
+export const mvnWishart: FactorOperator = defineOperator({
   name: 'mvn-wishart',
   description: 'x ~ N(mean, L^-1) for Gaussian vectors x and mean and a Wishart precision matrix L',
   ports: [
@@ -245,60 +246,70 @@ export const mvnWishart: FactorOperator = {
     { name: 'precision', accepts: ['wishart'] },
   ],
   params: { count: param.number({ min: 1, optional: true }), scatter: param.vector({ optional: true }) },
-  support: { ep: 'numeric', vmp: 'exact' },
   check: (_params, families) => {
     const dims = families.map((f) => f.dim)
     return dims.every((v) => v === dims[0])
       ? undefined
       : 'mvn-wishart: the vector, the mean and the matrix have one dimension'
   },
-  ep: (c): OperatorResult => ({ message: c.to === 2 ? messageToPrecision(c) : messageToGaussian(c) }),
-  vmp: (c): OperatorResult => {
-    const d = dimOf(c)
-    const w = arg(c, 2)
-    const lambda = w.family.moments(w.eta as Eta)
-    const rows = rowsOf(c.params, d)
-    if (c.to === 2) {
+  rules: {
+    // A message rule, not a site rule: when both Gaussian sides are points the message to the precision is the conjugate update
+    // (no tilted distribution), and the message to a Gaussian is taken against the cavity only when it is not flat (`side.flat`,
+    // read with a tolerance), which is not the plain quotient the engine's `projectSite` makes.
+    ep: messageRule(
+      (c): OperatorResult => ({ message: c.to === 2 ? messageToPrecision(c) : messageToGaussian(c) }),
+      'numeric',
+    ),
+    vmp: messageRule((c): OperatorResult => {
+      const d = dimOf(c)
+      const w = arg(c, 2)
+      const lambda = w.family.moments(w.eta as Eta)
+      const rows = rowsOf(c.params, d)
+      if (c.to === 2) {
+        const { outer } = expectedOuter(c, d)
+        return { message: [0.5 * rows.count, ...outer.map((v, e) => -0.5 * (rows.count * v + (rows.scatter[e] ?? 0)))] }
+      }
+      const other = momentsOf(arg(c, 1 - c.to), d)
+      const meanLambda = lambda.slice(1).map((v) => rows.count * v)
+      const hs = Array.from({ length: d }, (_, i) => {
+        let s = 0
+        for (let j = 0; j < d; j++) s += (meanLambda[i * d + j] as number) * (other.mean[j] as number)
+        return s
+      })
+      return { message: [...hs, ...meanLambda] }
+    }),
+  },
+  evidence: {
+    // The exact branch (both sides points) is not caught: only the quadrature's improper tilt is a NaN.
+    ep: (c) => {
+      const d = dimOf(c)
+      const w = arg(c, 2)
+      if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
+      const x = gaussianSide(arg(c, 0), d)
+      const mean = gaussianSide(arg(c, 1), d)
+      const family = wishart(d)
+      const rows = rowsOf(c.params, d)
+      if (x.point && mean.point) {
+        const r = Array.from(x.mean, (v, i) => v - (mean.mean[i] as number))
+        return family.logPartition(rawSum(w.eta as Eta, conjugateMessage(r, d, rows))) - 0.5 * rows.count * d * LOG_2PI
+      }
+      return evidenceOrNaN(() => {
+        return tiltOver(w.eta as Eta, evaluatorOf(x, mean, d, rows), x, mean, d, rows).logZ
+      })
+    },
+    vmp: (c) => {
+      const d = dimOf(c)
+      const w = arg(c, 2)
+      const lambda = w.family.moments(w.eta as Eta)
       const { outer } = expectedOuter(c, d)
-      return { message: [0.5 * rows.count, ...outer.map((v, e) => -0.5 * (rows.count * v + (rows.scatter[e] ?? 0)))] }
-    }
-    const other = momentsOf(arg(c, 1 - c.to), d)
-    const meanLambda = lambda.slice(1).map((v) => rows.count * v)
-    const hs = Array.from({ length: d }, (_, i) => {
-      let s = 0
-      for (let j = 0; j < d; j++) s += (meanLambda[i * d + j] as number) * (other.mean[j] as number)
-      return s
-    })
-    return { message: [...hs, ...meanLambda] }
+      const rows = rowsOf(c.params, d)
+      let tr = 0
+      for (let e = 0; e < d * d; e++)
+        tr += (lambda[1 + e] as number) * (rows.count * (outer[e] as number) + (rows.scatter[e] ?? 0))
+      return 0.5 * rows.count * (lambda[0] as number) - 0.5 * rows.count * d * LOG_2PI - 0.5 * tr
+    },
   },
-  expectedLog: (c) => {
-    const d = dimOf(c)
-    const w = arg(c, 2)
-    const lambda = w.family.moments(w.eta as Eta)
-    const { outer } = expectedOuter(c, d)
-    const rows = rowsOf(c.params, d)
-    let tr = 0
-    for (let e = 0; e < d * d; e++)
-      tr += (lambda[1 + e] as number) * (rows.count * (outer[e] as number) + (rows.scatter[e] ?? 0))
-    return 0.5 * rows.count * (lambda[0] as number) - 0.5 * rows.count * d * LOG_2PI - 0.5 * tr
-  },
-  logEvidence: (c) => {
-    const d = dimOf(c)
-    const w = arg(c, 2)
-    if (c.args.some((a) => a.eta !== undefined && !a.family.isProper(a.eta))) return Number.NaN
-    const x = gaussianSide(arg(c, 0), d)
-    const mean = gaussianSide(arg(c, 1), d)
-    const family = wishart(d)
-    const rows = rowsOf(c.params, d)
-    if (x.point && mean.point) {
-      const r = Array.from(x.mean, (v, i) => v - (mean.mean[i] as number))
-      return family.logPartition(rawSum(w.eta as Eta, conjugateMessage(r, d, rows))) - 0.5 * rows.count * d * LOG_2PI
-    }
-    return evidenceOrNaN(() => {
-      return tiltOver(w.eta as Eta, evaluatorOf(x, mean, d, rows), x, mean, d, rows).logZ
-    })
-  },
-}
+})
 
 /** The normal-Wishart message that a fully observed Gaussian row sends: `(1/2, -y y' / 2, y, -1/2)` on `(log |L|, L, L mu, mu' L mu)`. */
 function rowMessage(y: ArrayLike<number>, d: number): Eta {
@@ -325,7 +336,7 @@ function rowMessage(y: ArrayLike<number>, d: number): Eta {
  * mvnNormalWishart.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.length // => 8
  * ```
  */
-export const mvnNormalWishart: FactorOperator = {
+export const mvnNormalWishart: FactorOperator = defineOperator({
   name: 'mvn-normal-wishart',
   description: 'x ~ N(mu, L^-1) for an observed vector x and a normal-Wishart variable (mu, L)',
   ports: [
@@ -333,31 +344,34 @@ export const mvnNormalWishart: FactorOperator = {
     { name: 'theta', accepts: ['normal-wishart'] },
   ],
   params: {},
-  support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (_params, families) =>
     families[0]?.dim === families[1]?.dim
       ? undefined
       : 'mvn-normal-wishart: the vector and the matrix have one dimension',
-  ep: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  vmp: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  bp: (c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) }),
-  logEvidence: (c) => {
-    const d = arg(c, 1).family.dim
-    const a = arg(c, 1)
-    const f = normalWishart(d)
-    return f.logPartition(rawSum(a.eta as Eta, rowMessage(vectorOf(arg(c, 0)), d))) - 0.5 * d * LOG_2PI
+  rules: {
+    ep: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
+    vmp: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
+    bp: messageRule((c) => ({ message: rowMessage(vectorOf(arg(c, 0)), arg(c, 1).family.dim) })),
   },
-  expectedLog: (c) => {
-    const d = arg(c, 1).family.dim
-    const y = vectorOf(arg(c, 0))
-    const mo = arg(c, 1).family.moments(arg(c, 1).eta as Eta)
-    // E[0.5 log |L| - 0.5 (y - mu)' L (y - mu)] - (d / 2) log 2 pi
-    let quad = 0
-    for (let i = 0; i < d; i++) {
-      for (let j = 0; j < d; j++) quad += (y[i] as number) * (mo[1 + i * d + j] as number) * (y[j] as number)
-      quad -= 2 * (y[i] as number) * (mo[1 + d * d + i] as number)
-    }
-    quad += mo[1 + d * d + d] as number
-    return 0.5 * (mo[0] as number) - 0.5 * d * LOG_2PI - 0.5 * quad
+  evidence: {
+    ep: (c) => {
+      const d = arg(c, 1).family.dim
+      const a = arg(c, 1)
+      const f = normalWishart(d)
+      return f.logPartition(rawSum(a.eta as Eta, rowMessage(vectorOf(arg(c, 0)), d))) - 0.5 * d * LOG_2PI
+    },
+    vmp: (c) => {
+      const d = arg(c, 1).family.dim
+      const y = vectorOf(arg(c, 0))
+      const mo = arg(c, 1).family.moments(arg(c, 1).eta as Eta)
+      // E[0.5 log |L| - 0.5 (y - mu)' L (y - mu)] - (d / 2) log 2 pi
+      let quad = 0
+      for (let i = 0; i < d; i++) {
+        for (let j = 0; j < d; j++) quad += (y[i] as number) * (mo[1 + i * d + j] as number) * (y[j] as number)
+        quad -= 2 * (y[i] as number) * (mo[1 + d * d + i] as number)
+      }
+      quad += mo[1 + d * d + d] as number
+      return 0.5 * (mo[0] as number) - 0.5 * d * LOG_2PI - 0.5 * quad
+    },
   },
-}
+})

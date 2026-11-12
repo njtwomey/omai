@@ -10,5 +10,6 @@
 export * from './extremum.ts'
 export * from './gaussian.ts'
 export * from './linear.ts'
+export * from './list.ts'
 export * from './log-scale.ts'
 export * from './transition.ts'

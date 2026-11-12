@@ -23,6 +23,7 @@ import {
   scalarOf,
   vectorParam,
 } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError } from '../../core/errors.ts'
 import { gaussianMvEta, gaussianMvMoments } from '../../core/families-vector.ts'
 import { type ParamSpec, param } from '../../core/params.ts'
@@ -102,27 +103,30 @@ function affineOperator(
   declared: ParamSpec,
   form: (params: OperatorContext['params']) => { readonly coeffs: readonly number[]; readonly offset: number },
 ): FactorOperator {
-  return {
+  return defineOperator({
     name,
     description,
     ports,
     params: declared,
-    support: { ep: 'exact', vmp: 'exact' },
-    defines: 0,
-    ep: (c) => {
-      const f = form(c.params)
-      return affineMessage(c, f.coeffs, f.offset)
+    rules: {
+      ep: messageRule((c) => {
+        const f = form(c.params)
+        return affineMessage(c, f.coeffs, f.offset)
+      }),
+      vmp: messageRule((c) => {
+        const f = form(c.params)
+        return affineVariational(c, f.coeffs, f.offset)
+      }),
     },
-    vmp: (c) => {
-      const f = form(c.params)
-      return affineVariational(c, f.coeffs, f.offset)
+    evidence: {
+      ep: (c) => {
+        const f = form(c.params)
+        return affineEvidence(c, f.coeffs, f.offset)
+      },
+      vmp: () => 0,
     },
-    logEvidence: (c) => {
-      const f = form(c.params)
-      return affineEvidence(c, f.coeffs, f.offset)
-    },
-    expectedLog: () => 0,
-  }
+    traits: { defines: 0 },
+  })
 }
 
 /**
@@ -247,7 +251,7 @@ function dimensions(families: readonly Family[]): { readonly rows: number; reado
  * dotConstant.ep?.({ mode: 'ep', to: 1, args: [args[0] as never, { ...(args[1] as never) }], params: { a: [1, 3] }, power: 1 }).message.length // => 6
  * ```
  */
-export const dotConstant: FactorOperator = {
+export const dotConstant: FactorOperator = defineOperator({
   name: 'dot-constant',
   description: 's = a . w for a constant vector a',
   ports: [
@@ -255,37 +259,40 @@ export const dotConstant: FactorOperator = {
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
   params: { a: param.vector() },
-  support: { ep: 'exact', vmp: 'exact' },
-  defines: 0,
   check: (params, families) =>
     vectorParam(params, 'a').length === families[1]?.dim ? undefined : 'dot-constant: a must have the length of w',
-  // The message to w is linear in the cavity of s and the pushforward needs only the belief of w, so the variational
-  // rule is the same function as the EP one, with the cavity of the defined output and the belief of the input.
-  vmp: (c): OperatorResult => dotConstantMessage(c),
-  ep: (c): OperatorResult => dotConstantMessage(c),
-  logEvidence: (c) => {
-    const w = arg(c, 1)
-    // A latent output: the integral over the vector of its cavity times the output's cavity at a . w, which is the log
-    // partition of the vector's message plus the (exact) message to it. The output may be flat (nothing else reads it) and
-    // need not be proper on its own, only the sum must be.
-    if (arg(c, 0).value === undefined) {
-      const total = rawSum(etaOf(w), dotConstantMessage({ ...c, to: 1 }).message)
-      return w.family.isProper(total) ? w.family.logPartition(total) : Number.NaN
-    }
-    if (!allProper(c.args)) return Number.NaN
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    const { mean, covariance } = gaussianMvMoments(etaOf(w), d)
-    const s = gaussianOf(arg(c, 0))
-    let m = 0
-    for (let i = 0; i < d; i++) m += (a[i] ?? 0) * (mean[i] ?? 0)
-    const cov = dgemv(covariance, d, d, a)
-    let v = 0
-    for (let i = 0; i < d; i++) v += (a[i] ?? 0) * (cov[i] ?? 0)
-    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logNormal(s.mean, m, s.variance + v)
+  rules: {
+    ep: messageRule((c): OperatorResult => dotConstantMessage(c)),
+    // The message to w is linear in the cavity of s and the pushforward needs only the belief of w, so the variational
+    // rule is the same function as the EP one, with the cavity of the defined output and the belief of the input.
+    vmp: messageRule((c): OperatorResult => dotConstantMessage(c)),
   },
-  expectedLog: () => 0,
-}
+  evidence: {
+    ep: (c) => {
+      const w = arg(c, 1)
+      // A latent output: the integral over the vector of its cavity times the output's cavity at a . w, which is the log
+      // partition of the vector's message plus the (exact) message to it. The output may be flat (nothing else reads it) and
+      // need not be proper on its own, only the sum must be.
+      if (arg(c, 0).value === undefined) {
+        const total = rawSum(etaOf(w), dotConstantMessage({ ...c, to: 1 }).message)
+        return w.family.isProper(total) ? w.family.logPartition(total) : Number.NaN
+      }
+      if (!allProper(c.args)) return Number.NaN
+      const a = vectorParam(c.params, 'a')
+      const d = a.length
+      const { mean, covariance } = gaussianMvMoments(etaOf(w), d)
+      const s = gaussianOf(arg(c, 0))
+      let m = 0
+      for (let i = 0; i < d; i++) m += (a[i] ?? 0) * (mean[i] ?? 0)
+      const cov = dgemv(covariance, d, d, a)
+      let v = 0
+      for (let i = 0; i < d; i++) v += (a[i] ?? 0) * (cov[i] ?? 0)
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logNormal(s.mean, m, s.variance + v)
+    },
+    vmp: () => 0,
+  },
+  traits: { defines: 0 },
+})
 
 /** The message of s = a . w: to w the rank-one message of the cavity of s, to s the pushforward of the moments of w. */
 function dotConstantMessage(c: OperatorContext): OperatorResult {
@@ -327,7 +334,7 @@ function dotConstantMessage(c: OperatorContext): OperatorResult {
  * matmulConstant.ep?.({ mode: 'ep', to: 0, args, params: { matrix: [1, 1, 0, 2] }, power: 1 }).message.length // => 6
  * ```
  */
-export const matmulConstant: FactorOperator = {
+export const matmulConstant: FactorOperator = defineOperator({
   name: 'matmul-constant',
   description: 'y = A w for a constant matrix A',
   ports: [
@@ -335,85 +342,88 @@ export const matmulConstant: FactorOperator = {
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
   params: { matrix: param.vector() },
-  support: { ep: 'exact', vmp: 'exact' },
-  defines: 0,
   check: (params, families) => {
     const { rows, d } = dimensions(families)
     return vectorParam(params, 'matrix').length === rows * d
       ? undefined
       : 'matmul-constant: matrix must have rows x length(w) entries'
   },
-  ep: (c): OperatorResult => {
-    const m = vectorParam(c.params, 'matrix')
-    const rows = arg(c, 0).family.dim
-    const d = arg(c, 1).family.dim
-    if (c.to === 1) {
-      const y = etaOf(arg(c, 0))
-      const h = dgemv(m, rows, d, y.slice(0, rows), true)
-      const j = new Array<number>(d * d).fill(0)
-      for (let a = 0; a < d; a++)
-        for (let b = 0; b < d; b++) {
-          let s = 0
-          for (let r = 0; r < rows; r++)
-            for (let q = 0; q < rows; q++)
-              s += (m[r * d + a] ?? 0) * (y[rows + r * rows + q] ?? 0) * (m[q * d + b] ?? 0)
-          j[a * d + b] = s
-        }
-      return { message: [...h, ...j] }
-    }
-    const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    const my = dgemv(m, rows, d, mean)
-    const cov = new Array<number>(rows * rows).fill(0)
-    const ac = new Float64Array(rows * d)
-    for (let r = 0; r < rows; r++) {
-      const row = dgemv(covariance, d, d, m.slice(r * d, (r + 1) * d))
-      ac.set(row, r * d)
-    }
-    for (let r = 0; r < rows; r++)
-      for (let q = 0; q < rows; q++) {
-        let s = 0
-        for (let k = 0; k < d; k++) s += (m[r * d + k] ?? 0) * (ac[q * d + k] ?? 0)
-        cov[r * rows + q] = s
-      }
-    try {
-      return { message: gaussianMvEta(Array.from(my), cov) }
-    } catch (e) {
-      if (e instanceof OmaiError) throw new ImproperMessageError('matmul-constant: the image of w is degenerate')
-      throw e
-    }
-  },
-  // The mean field of a deterministic factor: the same function as the EP one, with the cavity of the defined output and the belief
-  // of the input (the message to w is linear in the cavity of y, the pushforward needs the moments of w alone).
-  vmp: (c): OperatorResult => (matmulConstant.ep as NonNullable<FactorOperator['ep']>)(c),
-  expectedLog: () => 0,
-  // y = A w is a point mass: the evidence is the masses of the cavities times the density of the cavity of y at the image of w,
-  // N(my; A mw, Vy + A Vw A'), a vector normal whose covariance must be positive definite.
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const m = vectorParam(c.params, 'matrix')
-    const rows = arg(c, 0).family.dim
-    const d = arg(c, 1).family.dim
-    const y = gaussianMvMoments(etaOf(arg(c, 0)), rows)
-    const w = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    const image = dgemv(m, rows, d, w.mean)
-    const spread = new Array<number>(rows * rows)
-    for (let r = 0; r < rows; r++)
-      for (let q = 0; q < rows; q++) {
-        let s = y.covariance[r * rows + q] ?? 0
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const m = vectorParam(c.params, 'matrix')
+      const rows = arg(c, 0).family.dim
+      const d = arg(c, 1).family.dim
+      if (c.to === 1) {
+        const y = etaOf(arg(c, 0))
+        const h = dgemv(m, rows, d, y.slice(0, rows), true)
+        const j = new Array<number>(d * d).fill(0)
         for (let a = 0; a < d; a++)
-          for (let b = 0; b < d; b++) s += (m[r * d + a] ?? 0) * (w.covariance[a * d + b] ?? 0) * (m[q * d + b] ?? 0)
-        spread[r * rows + q] = s
+          for (let b = 0; b < d; b++) {
+            let s = 0
+            for (let r = 0; r < rows; r++)
+              for (let q = 0; q < rows; q++)
+                s += (m[r * d + a] ?? 0) * (y[rows + r * rows + q] ?? 0) * (m[q * d + b] ?? 0)
+            j[a * d + b] = s
+          }
+        return { message: [...h, ...j] }
       }
-    const factor = spd(spread, rows)
-    if (factor === undefined) return Number.NaN
-    const gap = Array.from(y.mean, (v, i) => v - (image[i] ?? 0))
-    const solved = factor.solve(gap)
-    let quad = 0
-    for (let i = 0; i < rows; i++) quad += (gap[i] ?? 0) * (solved[i] ?? 0)
-    const logDensity = -0.5 * (rows * Math.log(2 * Math.PI) + factor.logDet + quad)
-    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logDensity
+      const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      const my = dgemv(m, rows, d, mean)
+      const cov = new Array<number>(rows * rows).fill(0)
+      const ac = new Float64Array(rows * d)
+      for (let r = 0; r < rows; r++) {
+        const row = dgemv(covariance, d, d, m.slice(r * d, (r + 1) * d))
+        ac.set(row, r * d)
+      }
+      for (let r = 0; r < rows; r++)
+        for (let q = 0; q < rows; q++) {
+          let s = 0
+          for (let k = 0; k < d; k++) s += (m[r * d + k] ?? 0) * (ac[q * d + k] ?? 0)
+          cov[r * rows + q] = s
+        }
+      try {
+        return { message: gaussianMvEta(Array.from(my), cov) }
+      } catch (e) {
+        if (e instanceof OmaiError) throw new ImproperMessageError('matmul-constant: the image of w is degenerate')
+        throw e
+      }
+    }),
+    // The mean field of a deterministic factor: the same function as the EP one, with the cavity of the defined output and the belief
+    // of the input (the message to w is linear in the cavity of y, the pushforward needs the moments of w alone).
+    vmp: messageRule((c): OperatorResult => (matmulConstant.ep as NonNullable<FactorOperator['ep']>)(c)),
   },
-}
+  evidence: {
+    // y = A w is a point mass: the evidence is the masses of the cavities times the density of the cavity of y at the image of w,
+    // N(my; A mw, Vy + A Vw A'), a vector normal whose covariance must be positive definite.
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const m = vectorParam(c.params, 'matrix')
+      const rows = arg(c, 0).family.dim
+      const d = arg(c, 1).family.dim
+      const y = gaussianMvMoments(etaOf(arg(c, 0)), rows)
+      const w = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      const image = dgemv(m, rows, d, w.mean)
+      const spread = new Array<number>(rows * rows)
+      for (let r = 0; r < rows; r++)
+        for (let q = 0; q < rows; q++) {
+          let s = y.covariance[r * rows + q] ?? 0
+          for (let a = 0; a < d; a++)
+            for (let b = 0; b < d; b++) s += (m[r * d + a] ?? 0) * (w.covariance[a * d + b] ?? 0) * (m[q * d + b] ?? 0)
+          spread[r * rows + q] = s
+        }
+      const factor = spd(spread, rows)
+      if (factor === undefined) return Number.NaN
+      const gap = Array.from(y.mean, (v, i) => v - (image[i] ?? 0))
+      const solved = factor.solve(gap)
+      let quad = 0
+      for (let i = 0; i < rows; i++) quad += (gap[i] ?? 0) * (solved[i] ?? 0)
+      const logDensity = -0.5 * (rows * Math.log(2 * Math.PI) + factor.logDet + quad)
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logDensity
+    },
+    vmp: () => 0,
+  },
+  traits: { defines: 0 },
+})
 
 /**
  * y ~ N(a . w, 1 / precision) for a Gaussian vector w, a constant row a and an observed or Gaussian y: one row of a
@@ -430,7 +440,7 @@ export const matmulConstant: FactorOperator = {
  * linearRegressionRow.ep?.({ mode: 'ep', to: 1, args, params: { a: [1, 2], precision: 2 }, power: 1 }).message // => [6, 12, 2, 4, 4, 8]
  * ```
  */
-export const linearRegressionRow: FactorOperator = {
+export const linearRegressionRow: FactorOperator = defineOperator({
   name: 'linear-regression-row',
   description: 'y ~ N(a . w, 1 / precision) for a constant row a',
   ports: [
@@ -438,71 +448,74 @@ export const linearRegressionRow: FactorOperator = {
     { name: 'w', accepts: ['gaussian-mv'] },
   ],
   params: { a: param.vector(), precision: param.positive() },
-  support: { ep: 'exact', vmp: 'exact' },
   check: (params, families) =>
     vectorParam(params, 'a').length === families[1]?.dim
       ? undefined
       : 'linear-regression-row: a must have the length of w',
-  ep: (c): OperatorResult => {
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    const tau = numberParam(c.params, 'precision')
-    const y = gaussianOf(arg(c, 0))
-    if (c.to === 1) {
-      const effective = y.variance > 0 ? 1 / (y.variance + 1 / tau) : tau
-      return { message: rowMessage(a, effective, y.mean) }
-    }
-    const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    const cov = dgemv(covariance, d, d, a)
-    let m = 0
-    let v = 1 / tau
-    for (let i = 0; i < d; i++) {
-      m += (a[i] ?? 0) * (mean[i] ?? 0)
-      v += (a[i] ?? 0) * (cov[i] ?? 0)
-    }
-    return { message: gaussianMessage(m, v) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const a = vectorParam(c.params, 'a')
+      const d = a.length
+      const tau = numberParam(c.params, 'precision')
+      const y = gaussianOf(arg(c, 0))
+      if (c.to === 1) {
+        const effective = y.variance > 0 ? 1 / (y.variance + 1 / tau) : tau
+        return { message: rowMessage(a, effective, y.mean) }
+      }
+      const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      const cov = dgemv(covariance, d, d, a)
+      let m = 0
+      let v = 1 / tau
+      for (let i = 0; i < d; i++) {
+        m += (a[i] ?? 0) * (mean[i] ?? 0)
+        v += (a[i] ?? 0) * (cov[i] ?? 0)
+      }
+      return { message: gaussianMessage(m, v) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const a = vectorParam(c.params, 'a')
+      const d = a.length
+      const tau = numberParam(c.params, 'precision')
+      if (c.to === 1) return { message: rowMessage(a, tau, gaussianOf(arg(c, 0)).mean) }
+      const { mean } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      let m = 0
+      for (let i = 0; i < d; i++) m += (a[i] ?? 0) * (mean[i] ?? 0)
+      return { message: [tau * m, tau] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    const tau = numberParam(c.params, 'precision')
-    if (c.to === 1) return { message: rowMessage(a, tau, gaussianOf(arg(c, 0)).mean) }
-    const { mean } = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    let m = 0
-    for (let i = 0; i < d; i++) m += (a[i] ?? 0) * (mean[i] ?? 0)
-    return { message: [tau * m, tau] }
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const a = vectorParam(c.params, 'a')
+      const d = a.length
+      const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      const cov = dgemv(covariance, d, d, a)
+      let m = 0
+      let v = 1 / numberParam(c.params, 'precision')
+      for (let i = 0; i < d; i++) {
+        m += (a[i] ?? 0) * (mean[i] ?? 0)
+        v += (a[i] ?? 0) * (cov[i] ?? 0)
+      }
+      const y = gaussianOf(arg(c, 0))
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logNormal(y.mean, m, y.variance + v)
+    },
+    vmp: (c) => {
+      const a = vectorParam(c.params, 'a')
+      const d = a.length
+      const tau = numberParam(c.params, 'precision')
+      const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
+      const cov = dgemv(covariance, d, d, a)
+      let m = 0
+      let v = 0
+      for (let i = 0; i < d; i++) {
+        m += (a[i] ?? 0) * (mean[i] ?? 0)
+        v += (a[i] ?? 0) * (cov[i] ?? 0)
+      }
+      const y = gaussianOf(arg(c, 0))
+      return 0.5 * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * (y.variance + (y.mean - m) ** 2 + v)
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    const cov = dgemv(covariance, d, d, a)
-    let m = 0
-    let v = 1 / numberParam(c.params, 'precision')
-    for (let i = 0; i < d; i++) {
-      m += (a[i] ?? 0) * (mean[i] ?? 0)
-      v += (a[i] ?? 0) * (cov[i] ?? 0)
-    }
-    const y = gaussianOf(arg(c, 0))
-    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + logNormal(y.mean, m, y.variance + v)
-  },
-  expectedLog: (c) => {
-    const a = vectorParam(c.params, 'a')
-    const d = a.length
-    const tau = numberParam(c.params, 'precision')
-    const { mean, covariance } = gaussianMvMoments(etaOf(arg(c, 1)), d)
-    const cov = dgemv(covariance, d, d, a)
-    let m = 0
-    let v = 0
-    for (let i = 0; i < d; i++) {
-      m += (a[i] ?? 0) * (mean[i] ?? 0)
-      v += (a[i] ?? 0) * (cov[i] ?? 0)
-    }
-    const y = gaussianOf(arg(c, 0))
-    return 0.5 * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * (y.variance + (y.mean - m) ** 2 + v)
-  },
-}
+})
 
 /** The rank-one message `[tau y a, tau a a']` of a regression row. */
 function rowMessage(a: readonly number[], tau: number, y: number): number[] {
@@ -527,87 +540,90 @@ function rowMessage(a: readonly number[], tau: number, y: number): number[] {
  * gaussianJoint.ep?.({ mode: 'ep', to: 0, args, params: { J: [2, -1, -1, 2], h: [0, 0] }, power: 1 }).message.map((v) => Math.round(v * 1e6) / 1e6) // => [0.666667, 1.666667]
  * ```
  */
-export const gaussianJoint: FactorOperator = {
+export const gaussianJoint: FactorOperator = defineOperator({
   name: 'gaussian-joint',
   description: 'exp(g + h x - x J x / 2) over scalar Gaussian variables',
   ports: (params) => vectorParam(params, 'h').map((_, i) => gaussianPort(`x${i}`)),
   params: { h: param.vector(), J: param.vector(), g: param.number({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
   check: (params) => {
     const n = vectorParam(params, 'h').length
     return vectorParam(params, 'J').length === n * n ? undefined : 'gaussian-joint: J must be n x n for h of length n'
   },
-  ep: (c): OperatorResult => {
-    const { Jr, hr, ports, n } = reduceJoint(c)
-    const t = ports.indexOf(c.to)
-    const rest = ports.filter((p) => p !== c.to)
-    // Add the incoming messages of the other ports to the information form.
-    const jm = Float64Array.from(Jr)
-    const hm = Array.from(hr)
-    for (const [k, p] of ports.entries()) {
-      if (p === c.to) continue
-      const e = etaOf(arg(c, p))
-      hm[k] = (hm[k] ?? 0) + (e[0] ?? 0)
-      jm[k * n + k] = (jm[k * n + k] ?? 0) + (e[1] ?? 0)
-    }
-    if (rest.length === 0) return { message: [hm[t] ?? 0, jm[t * n + t] ?? 0] }
-    const idx = ports.map((p, k) => (p === c.to ? -1 : k)).filter((k) => k >= 0)
-    const jrr = new Float64Array(idx.length * idx.length)
-    for (const [a, ka] of idx.entries())
-      for (const [b, kb] of idx.entries()) jrr[a * idx.length + b] = jm[ka * n + kb] ?? 0
-    const factor = spd(jrr, idx.length)
-    if (factor === undefined)
-      throw new ImproperMessageError('gaussian-joint: the other variables are not jointly proper')
-    const jtr = idx.map((k) => jm[t * n + k] ?? 0)
-    const solveH = factor.solve(idx.map((k) => hm[k] ?? 0))
-    const solveJ = factor.solve(jtr)
-    let h = hm[t] ?? 0
-    let j = jm[t * n + t] ?? 0
-    for (let a = 0; a < idx.length; a++) {
-      h -= (jtr[a] ?? 0) * (solveH[a] ?? 0)
-      j -= (jtr[a] ?? 0) * (solveJ[a] ?? 0)
-    }
-    return { message: [h, j] }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const { Jr, hr, ports, n } = reduceJoint(c)
+      const t = ports.indexOf(c.to)
+      const rest = ports.filter((p) => p !== c.to)
+      // Add the incoming messages of the other ports to the information form.
+      const jm = Float64Array.from(Jr)
+      const hm = Array.from(hr)
+      for (const [k, p] of ports.entries()) {
+        if (p === c.to) continue
+        const e = etaOf(arg(c, p))
+        hm[k] = (hm[k] ?? 0) + (e[0] ?? 0)
+        jm[k * n + k] = (jm[k * n + k] ?? 0) + (e[1] ?? 0)
+      }
+      if (rest.length === 0) return { message: [hm[t] ?? 0, jm[t * n + t] ?? 0] }
+      const idx = ports.map((p, k) => (p === c.to ? -1 : k)).filter((k) => k >= 0)
+      const jrr = new Float64Array(idx.length * idx.length)
+      for (const [a, ka] of idx.entries())
+        for (const [b, kb] of idx.entries()) jrr[a * idx.length + b] = jm[ka * n + kb] ?? 0
+      const factor = spd(jrr, idx.length)
+      if (factor === undefined)
+        throw new ImproperMessageError('gaussian-joint: the other variables are not jointly proper')
+      const jtr = idx.map((k) => jm[t * n + k] ?? 0)
+      const solveH = factor.solve(idx.map((k) => hm[k] ?? 0))
+      const solveJ = factor.solve(jtr)
+      let h = hm[t] ?? 0
+      let j = jm[t * n + t] ?? 0
+      for (let a = 0; a < idx.length; a++) {
+        h -= (jtr[a] ?? 0) * (solveH[a] ?? 0)
+        j -= (jtr[a] ?? 0) * (solveJ[a] ?? 0)
+      }
+      return { message: [h, j] }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const J = vectorParam(c.params, 'J')
+      const h = vectorParam(c.params, 'h')
+      const n = h.length
+      let lin = h[c.to] ?? 0
+      for (let j = 0; j < n; j++) if (j !== c.to) lin -= (J[c.to * n + j] ?? 0) * gaussianOf(arg(c, j)).mean
+      return { message: [lin, J[c.to * n + c.to] ?? 0] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const J = vectorParam(c.params, 'J')
-    const h = vectorParam(c.params, 'h')
-    const n = h.length
-    let lin = h[c.to] ?? 0
-    for (let j = 0; j < n; j++) if (j !== c.to) lin -= (J[c.to * n + j] ?? 0) * gaussianOf(arg(c, j)).mean
-    return { message: [lin, J[c.to * n + c.to] ?? 0] }
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const { Jr, hr, ports, n, g } = reduceJoint(c)
+      const jm = Float64Array.from(Jr)
+      const hm = Array.from(hr)
+      for (const [k, p] of ports.entries()) {
+        const a = arg(c, p)
+        if (a.eta === undefined) continue
+        hm[k] = (hm[k] ?? 0) + (a.eta[0] ?? 0)
+        jm[k * n + k] = (jm[k * n + k] ?? 0) + (a.eta[1] ?? 0)
+      }
+      const factor = spd(jm, n)
+      if (factor === undefined) return Number.NaN
+      const x = factor.solve(hm)
+      let quad = 0
+      for (let i = 0; i < n; i++) quad += (hm[i] ?? 0) * (x[i] ?? 0)
+      return g + 0.5 * quad - 0.5 * factor.logDet + 0.5 * n * Math.log(2 * Math.PI)
+    },
+    vmp: (c) => {
+      const J = vectorParam(c.params, 'J')
+      const h = vectorParam(c.params, 'h')
+      const n = h.length
+      let value = numberParam(c.params, 'g', 0)
+      for (let i = 0; i < n; i++) {
+        const gi = gaussianOf(arg(c, i))
+        value += (h[i] ?? 0) * gi.mean - 0.5 * (J[i * n + i] ?? 0) * gi.variance
+        for (let j = 0; j < n; j++) value -= 0.5 * (J[i * n + j] ?? 0) * gi.mean * gaussianOf(arg(c, j)).mean
+      }
+      return value
+    },
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const { Jr, hr, ports, n, g } = reduceJoint(c)
-    const jm = Float64Array.from(Jr)
-    const hm = Array.from(hr)
-    for (const [k, p] of ports.entries()) {
-      const a = arg(c, p)
-      if (a.eta === undefined) continue
-      hm[k] = (hm[k] ?? 0) + (a.eta[0] ?? 0)
-      jm[k * n + k] = (jm[k * n + k] ?? 0) + (a.eta[1] ?? 0)
-    }
-    const factor = spd(jm, n)
-    if (factor === undefined) return Number.NaN
-    const x = factor.solve(hm)
-    let quad = 0
-    for (let i = 0; i < n; i++) quad += (hm[i] ?? 0) * (x[i] ?? 0)
-    return g + 0.5 * quad - 0.5 * factor.logDet + 0.5 * n * Math.log(2 * Math.PI)
-  },
-  expectedLog: (c) => {
-    const J = vectorParam(c.params, 'J')
-    const h = vectorParam(c.params, 'h')
-    const n = h.length
-    let value = numberParam(c.params, 'g', 0)
-    for (let i = 0; i < n; i++) {
-      const gi = gaussianOf(arg(c, i))
-      value += (h[i] ?? 0) * gi.mean - 0.5 * (J[i * n + i] ?? 0) * gi.variance
-      for (let j = 0; j < n; j++) value -= 0.5 * (J[i * n + j] ?? 0) * gi.mean * gaussianOf(arg(c, j)).mean
-    }
-    return value
-  },
-}
+})
 
 /** The potential with its observed ports conditioned away: the information form over the ports that carry messages. */
 function reduceJoint(c: OperatorContext): {

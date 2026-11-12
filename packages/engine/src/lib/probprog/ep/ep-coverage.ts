@@ -10,7 +10,8 @@ import { epRoute, vmpSpecMethod } from '../inference/index.ts'
 import { analysisOf } from '../inference/model-input.ts'
 import { benchmarkModels } from '../models/index.ts'
 import { epAtoms } from './ep-atom-list.ts'
-import { atomBeliefs, atomBound, atomCheck, atomReference, atomRun } from './ep-atoms.ts'
+import { atomBound, atomCheck, atomReference, atomRun } from './ep-atoms.ts'
+import { atomBeliefs } from './run.ts'
 
 /** One row of the coverage: a setup or a model, whether EP runs on it, and why not. */
 export interface CoverageRow {

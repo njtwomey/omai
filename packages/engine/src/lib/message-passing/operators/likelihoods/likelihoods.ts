@@ -11,8 +11,9 @@
  */
 
 import { logAddExp } from '../../../base/index.ts'
-import { errorText, perPower } from '../../core/_messages.ts'
-import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, vectorParam } from '../../core/args.ts'
+import { errorText } from '../../core/_messages.ts'
+import { allProper, gaussianOf, massOf, numberParam, vectorParam } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ParameterError } from '../../core/errors.ts'
 import { namedParams, type ParamSpec, param } from '../../core/params.ts'
 import type { FactorOperator, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
@@ -415,7 +416,7 @@ export function likelihoodSite(
 ): FactorOperator {
   const tilted = (c: OperatorContext): { logMass: number; mean: number; variance: number } =>
     tiltedSite(table, fixed, c)
-  return {
+  return defineOperator({
     name,
     description:
       fixed === undefined ? 'y | u ~ a numeric likelihood of the registry' : (table[fixed]?.description ?? name),
@@ -431,10 +432,6 @@ export function likelihoodSite(
             }
           }
         : likelihoodParams(table[fixed] as Likelihood),
-    support: { ep: 'numeric', vmp: 'numeric' },
-    readsTarget: true,
-    ...(options.needsDensity === true ? { needsDensity: true } : {}),
-    power: true,
     check: (params) => {
       try {
         resolve(table, fixed, params)
@@ -443,26 +440,31 @@ export function likelihoodSite(
         return errorText(e)
       }
     },
-    ep: (c): OperatorResult => {
-      const t = tilted(c)
-      const site = gaussianSiteMessage(etaOf(c.args[0] as never), t.mean, t.variance)
-      return { message: perPower(site, c.power) }
+    rules: {
+      ep: siteRule(tilted),
+      // The mean field: the non-conjugate message of the density under the belief of the predictor.
+      vmp: messageRule((c): OperatorResult => {
+        const { likelihood, y } = resolve(table, fixed, c.params)
+        const log = likelihood.density(y, c.params)
+        const kinks = [likelihood.locate?.(y, c.params)?.kinks]
+        return { message: numericMessage(quadraturePorts(c.args, { kinks }), 0, (x) => log(x[0] as number)) }
+      }, 'numeric'),
     },
-    // The mean field: the non-conjugate message of the density under the belief of the predictor.
-    vmp: (c): OperatorResult => {
-      const { likelihood, y } = resolve(table, fixed, c.params)
-      const log = likelihood.density(y, c.params)
-      const kinks = [likelihood.locate?.(y, c.params)?.kinks]
-      return { message: numericMessage(quadraturePorts(c.args, { kinks }), 0, (x) => log(x[0] as number)) }
+    evidence: {
+      ep: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + tilted(c).logMass : Number.NaN),
+      vmp: (c) => {
+        const { likelihood, y } = resolve(table, fixed, c.params)
+        const log = likelihood.density(y, c.params)
+        const kinks = [likelihood.locate?.(y, c.params)?.kinks]
+        return numericExpectedLog(quadraturePorts(c.args, { kinks }), (x) => log(x[0] as number))
+      },
     },
-    expectedLog: (c) => {
-      const { likelihood, y } = resolve(table, fixed, c.params)
-      const log = likelihood.density(y, c.params)
-      const kinks = [likelihood.locate?.(y, c.params)?.kinks]
-      return numericExpectedLog(quadraturePorts(c.args, { kinks }), (x) => log(x[0] as number))
+    traits: {
+      readsTarget: true,
+      power: true,
+      ...(options.needsDensity === true ? { needsDensity: true as const } : {}),
     },
-    logEvidence: (c) => (allProper(c.args) ? massOf(c.args[0] as never) + tilted(c).logMass : Number.NaN),
-  }
+  })
 }
 
 /**

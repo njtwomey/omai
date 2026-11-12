@@ -102,7 +102,7 @@ export function gaussianWindow(mean: number, variance: number, profile: WindowPr
 }
 
 /** How the window of a belief in the variational quadrature is laid around its mode: the reach, the floor of the left reach per unit of `1 / shape`, and the caps. */
-export const variationalWindow: {
+const variationalWindow: {
   readonly reach: number
   readonly leftPerShape: number
   readonly leftCap: number

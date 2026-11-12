@@ -14,8 +14,9 @@
  */
 
 import { type Json, logSumExpOf, OmaiError } from '../../../base/index.ts'
-import { arg, errorText, evidenceOrNaN } from '../../core/_messages.ts'
+import { arg, errorText } from '../../core/_messages.ts'
 import { etaOf, massOf, numberParam, scalarOf, valueArg } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import { gaussian } from '../../core/families.ts'
 import { discreteEta, discreteProbs } from '../../core/families-vector.ts'
@@ -30,6 +31,8 @@ import type {
   Params,
   Port,
 } from '../../core/types.ts'
+import { portsOf } from '../../core/types.ts'
+import { ruleMessage } from '../../engine/dispatch.ts'
 import type { OperatorName } from '../names.ts'
 
 /**
@@ -138,7 +141,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       const q = powerable(b) ?? unpowerable(b)
       const own = etaOf(arg(c, q.variable + 1))
       const family = arg(c, q.variable + 1).family
-      const message = q.op.ep?.(context(c, b, b.args.indexOf(q.variable), 'ep')).message ?? []
+      const message = ruleMessage(q.op, context(c, b, b.args.indexOf(q.variable), 'ep')).message
       const once = logBranchAt(c, b)
       const base = family.logPartition(own)
       const constant = once - (family.logPartition(own.map((v, i) => v + (message[i] ?? 0))) - base)
@@ -166,23 +169,17 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
     if (op === undefined || local < 0) return undefined
     const ctx = context(c, b, local, 'ep')
     const own = etaOf(arg(c, variable + 1))
-    let message: Eta
     if (c.power !== 1) {
       // The tilted natural parameters of the branch to the power p: the cavity plus p times the message of the closed-form branch.
       if (powerable(b) === undefined) unpowerable(b)
-      return own.map((v, i) => v + c.power * ((op.ep?.(ctx).message ?? [])[i] ?? 0))
+      return own.map((v, i) => v + c.power * (ruleMessage(op, ctx).message[i] ?? 0))
     }
-    if (op.ep !== undefined) message = op.ep(ctx).message
-    else if (op.tilted !== undefined) {
-      const target = arg(c, variable + 1)
-      message = target.family.fromMoments(op.tilted(ctx).moments).map((v, i) => v - (own[i] ?? 0))
-    } else throw new OmaiError('not-implemented', `gate: ${op.name} has no expectation propagation rule`)
+    const message = ruleMessage(op, ctx).message
     return own.map((v, i) => v + (message[i] ?? 0))
   }
-  return {
+  return defineOperator({
     name: 'gate',
     description: 'a discrete variable selects which factor holds, each branch over its own variables',
-    needsDensity: true,
     ports: (params: Params): readonly Port[] => [
       { name: 'z', accepts: ['discrete', 'bernoulli'], constant: true },
       ...Array.from(
@@ -206,9 +203,6 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       ),
     ],
     params: { arity: param.integer({ min: 1 }), branches: param.any({ example: [] }) },
-    support: { ep: 'numeric', vmp: 'bound' },
-    // A power (fractional EP, an alpha-divergence) is taken of the branches: each is the factor to the power p, and the gate's indicators are disjoint so the factor to the power p is the gate of the branches to the power p.
-    power: (params) => branchesOf(params).every((b) => b.operator === undefined || powerable(b) !== undefined),
     check: (params, families) => {
       const states = families[0]?.kind === 'bernoulli' ? 2 : families[0]?.dim
       const branches = branchesOf(params)
@@ -227,7 +221,7 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
               return errorText(e)
             }
           }
-          const ports = typeof op.ports === 'function' ? op.ports(b.params) : op.ports
+          const ports = portsOf(op, b.params)
           if (ports.length !== b.args.length)
             return `gate: branch ${k}: ${op.name} has ${ports.length} ports, ${b.args.length} given`
           const fams = b.args.map((a): Family => (typeof a === 'number' ? (families[a + 1] as Family) : gaussian))
@@ -237,87 +231,95 @@ export function gateOperator(inner: Readonly<Record<string, FactorOperator>>): F
       }
       return undefined
     },
-    ep: (c): OperatorResult => {
-      const branches = branchesOf(c.params)
-      const k = branches.length
-      const z = arg(c, 0)
-      const evidence = branches.map((b) => logBranch(c, b))
-      if (c.to === 0) {
-        const top = Math.max(...evidence)
+    rules: {
+      ep: messageRule((c): OperatorResult => {
+        const branches = branchesOf(c.params)
+        const k = branches.length
+        const z = arg(c, 0)
+        const evidence = branches.map((b) => logBranch(c, b))
+        if (c.to === 0) {
+          const top = Math.max(...evidence)
+          if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('gate: no branch has evidence')
+          // The message that, to the power p, is the branch evidences: their logs divided by p.
+          const logs = evidence.map((v) => (v - top) / c.power)
+          return {
+            message:
+              z.family.kind === 'bernoulli'
+                ? (z.family.fromLogProbs?.(logs) as Eta)
+                : discreteEta(logs.map((v) => Math.exp(v))),
+          }
+        }
+        const pz = stateProbabilities(z, k)
+        const lw = evidence.map((v, i) => Math.log(pz[i] ?? 0) + v)
+        const top = Math.max(...lw)
         if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('gate: no branch has evidence')
-        // The message that, to the power p, is the branch evidences: their logs divided by p.
-        const logs = evidence.map((v) => (v - top) / c.power)
-        return {
-          message:
-            z.family.kind === 'bernoulli'
-              ? (z.family.fromLogProbs?.(logs) as Eta)
-              : discreteEta(logs.map((v) => Math.exp(v))),
+        const w = lw.map((v) => Math.exp(v - top))
+        const norm = w.reduce((a, b) => a + b, 0)
+        const variable = c.to - 1
+        const target = arg(c, c.to)
+        const family = target.family
+        const own = etaOf(target)
+        const mixed = new Array<number>(family.size).fill(0)
+        for (const [i, b] of branches.entries()) {
+          if ((w[i] ?? 0) === 0) continue
+          const tilted = sent(c, b, variable) ?? own
+          const mo = family.moments(tilted)
+          for (let j = 0; j < mo.length; j++) mixed[j] = (mixed[j] ?? 0) + ((w[i] ?? 0) / norm) * (mo[j] ?? 0)
         }
-      }
-      const pz = stateProbabilities(z, k)
-      const lw = evidence.map((v, i) => Math.log(pz[i] ?? 0) + v)
-      const top = Math.max(...lw)
-      if (!(top > Number.NEGATIVE_INFINITY)) throw new ImproperMessageError('gate: no branch has evidence')
-      const w = lw.map((v) => Math.exp(v - top))
-      const norm = w.reduce((a, b) => a + b, 0)
-      const variable = c.to - 1
-      const target = arg(c, c.to)
-      const family = target.family
-      const own = etaOf(target)
-      const mixed = new Array<number>(family.size).fill(0)
-      for (const [i, b] of branches.entries()) {
-        if ((w[i] ?? 0) === 0) continue
-        const tilted = sent(c, b, variable) ?? own
-        const mo = family.moments(tilted)
-        for (let j = 0; j < mo.length; j++) mixed[j] = (mixed[j] ?? 0) + ((w[i] ?? 0) / norm) * (mo[j] ?? 0)
-      }
-      return { message: family.fromMoments(mixed).map((v, i) => (v - (own[i] ?? 0)) / c.power) }
-    },
-    vmp: (c): OperatorResult => {
-      const branches = branchesOf(c.params)
-      const z = arg(c, 0)
-      if (c.to === 0) {
-        const logs = branches.map((b) => {
+        return { message: family.fromMoments(mixed).map((v, i) => (v - (own[i] ?? 0)) / c.power) }
+      }, 'numeric'),
+      vmp: messageRule((c): OperatorResult => {
+        const branches = branchesOf(c.params)
+        const z = arg(c, 0)
+        if (c.to === 0) {
+          const logs = branches.map((b) => {
+            const op = innerOf(b)
+            return op?.expectedLog === undefined ? 0 : op.expectedLog(context(c, b, 0, 'vmp'))
+          })
+          return {
+            message: z.family.kind === 'bernoulli' ? (z.family.fromLogProbs?.(logs) as Eta) : logs,
+          }
+        }
+        const r = stateProbabilities(z, branches.length)
+        const variable = c.to - 1
+        const family = arg(c, c.to).family
+        const out = new Array<number>(family.size).fill(0)
+        for (const [i, b] of branches.entries()) {
           const op = innerOf(b)
-          return op?.expectedLog === undefined ? 0 : op.expectedLog(context(c, b, 0, 'vmp'))
-        })
-        return {
-          message: z.family.kind === 'bernoulli' ? (z.family.fromLogProbs?.(logs) as Eta) : logs,
+          const local = b.args.indexOf(variable)
+          if (op?.vmp === undefined || local < 0 || (r[i] ?? 0) === 0) continue
+          const m = op.vmp(context(c, b, local, 'vmp')).message
+          for (let j = 0; j < out.length; j++) out[j] = (out[j] ?? 0) + (r[i] ?? 0) * (m[j] ?? 0)
         }
-      }
-      const r = stateProbabilities(z, branches.length)
-      const variable = c.to - 1
-      const family = arg(c, c.to).family
-      const out = new Array<number>(family.size).fill(0)
-      for (const [i, b] of branches.entries()) {
-        const op = innerOf(b)
-        const local = b.args.indexOf(variable)
-        if (op?.vmp === undefined || local < 0 || (r[i] ?? 0) === 0) continue
-        const m = op.vmp(context(c, b, local, 'vmp')).message
-        for (let j = 0; j < out.length; j++) out[j] = (out[j] ?? 0) + (r[i] ?? 0) * (m[j] ?? 0)
-      }
-      return { message: out }
+        return { message: out }
+      }, 'bound'),
     },
-    logEvidence: (c) => {
-      return evidenceOrNaN(() => {
+    evidence: {
+      improperIsNaN: true,
+      ep: (c) => {
         const branches = branchesOf(c.params)
         const pz = stateProbabilities(arg(c, 0), branches.length)
         const terms = branches.map((b, i) => Math.log(pz[i] ?? 0) + logBranch(c, b))
         let total = massOf(arg(c, 0))
         for (let i = 1; i < c.args.length; i++) total += massOf(arg(c, i))
         return total + logSumExpOf(terms)
-      })
+      },
+      vmp: (c) => {
+        const branches = branchesOf(c.params)
+        const r = stateProbabilities(arg(c, 0), branches.length)
+        let total = 0
+        for (const [i, b] of branches.entries()) {
+          const op = innerOf(b)
+          if (op?.expectedLog === undefined || (r[i] ?? 0) === 0) continue
+          total += (r[i] ?? 0) * op.expectedLog(context(c, b, 0, 'vmp'))
+        }
+        return total
+      },
     },
-    expectedLog: (c) => {
-      const branches = branchesOf(c.params)
-      const r = stateProbabilities(arg(c, 0), branches.length)
-      let total = 0
-      for (const [i, b] of branches.entries()) {
-        const op = innerOf(b)
-        if (op?.expectedLog === undefined || (r[i] ?? 0) === 0) continue
-        total += (r[i] ?? 0) * op.expectedLog(context(c, b, 0, 'vmp'))
-      }
-      return total
+    // A power (fractional EP, an alpha-divergence) is taken of the branches: each is the factor to the power p, and the gate's indicators are disjoint so the factor to the power p is the gate of the branches to the power p.
+    traits: {
+      needsDensity: true,
+      power: (params) => branchesOf(params).every((b) => b.operator === undefined || powerable(b) !== undefined),
     },
-  }
+  })
 }

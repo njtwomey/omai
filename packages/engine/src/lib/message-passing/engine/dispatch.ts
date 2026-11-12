@@ -7,9 +7,18 @@
 import { OmaiError } from '../../base/index.ts'
 import { isFlat } from '../core/_messages.ts'
 import { FLAT_CAVITY_PRECISION } from '../core/args.ts'
+import { projectSite } from '../core/define.ts'
 import { ImproperMessageError } from '../core/errors.ts'
 import type { CompiledGraph } from '../core/graph.ts'
-import type { Arg, Eta, Memo, OperatorContext, OperatorResult } from '../core/types.ts'
+import {
+  type Arg,
+  type Eta,
+  type FactorOperator,
+  type Memo,
+  type OperatorContext,
+  type OperatorResult,
+  readsTargetOf,
+} from '../core/types.ts'
 import { readable } from './_cavities.ts'
 import type { Projection } from './projections.ts'
 
@@ -19,6 +28,25 @@ export type FactorProposal =
   | { readonly kind: 'flat' }
   | { readonly kind: 'blocked' }
   | { readonly kind: 'failed' }
+
+/**
+ * The message a rule of an operator gives for a context: the hook of the context's mode when the operator has one, else (for
+ * expectation propagation) the moments of its `tilted` function projected onto the family, divided by the cavity and by the power
+ * (`projectSite`). The one place a rule is chosen: the engine's dispatch, and the operators that run inner operators (the gate,
+ * the lifts of a link to a row or a plate), call it.
+ *
+ * @param op - The operator.
+ * @param ctx - What it is asked: the mode, the port, the arguments, the parameters and the power.
+ * @returns The message.
+ * @throws OmaiError `not-implemented` when the operator has no rule for the mode.
+ */
+export function ruleMessage(op: FactorOperator, ctx: OperatorContext): OperatorResult {
+  const hook = ctx.mode === 'ep' ? op.ep : ctx.mode === 'vmp' ? op.vmp : op.bp
+  if (hook !== undefined) return hook.call(op, ctx)
+  if (ctx.mode === 'ep' && op.tilted !== undefined)
+    return { message: projectSite(ctx.args[ctx.to] as Arg, op.tilted(ctx), ctx.power) }
+  throw new OmaiError('not-implemented', `${op.name} has no ${ctx.mode} message rule`)
+}
 
 /**
  * The message a factor's operator sends to one port under a projection, from the arguments it is shown: the closed-form
@@ -45,7 +73,7 @@ export function operatorMessage(
 ): FactorProposal {
   const op = f.operator
   const target = args[to] as Arg
-  const reads = typeof op.readsTarget === 'function' ? op.readsTarget(to) : op.readsTarget === true
+  const reads = readsTargetOf(op, to)
   const shown = readable(op, args, to)
   // A flat target of an operator that needs a density is shown wide, so it is not blocked; an improper one still is.
   if (reads && !shown.widenedTarget && target.eta !== undefined && !target.family.isProper(target.eta))
@@ -59,23 +87,12 @@ export function operatorMessage(
     memo,
     ...(projection.numeric === undefined ? {} : { rule: projection.numeric }),
   }
-  const hook = projection.hook === 'ep' ? op.ep : projection.hook === 'vmp' ? op.vmp : op.bp
   try {
-    let result: OperatorResult
-    if (hook !== undefined) {
-      result = hook.call(op, ctx)
-      // The message of a moment-matching rule is the projection divided by the cavity it was shown: against the flat cavity
-      // that is the same message plus the wide one.
-      if (shown.widenedTarget && projection.hook === 'ep')
-        result = { ...result, message: result.message.map((v, i) => v + (i === 1 ? FLAT_CAVITY_PRECISION / power : 0)) }
-    } else if (projection.hook === 'ep' && op.tilted !== undefined) {
-      const t = op.tilted(ctx)
-      const own = target.eta as Eta
-      const projected = target.family.fromMoments(t.moments)
-      result = { message: projected.map((v, i) => (v - (own[i] ?? 0)) / power) }
-    } else {
-      throw new OmaiError('not-implemented', `${op.name} has no ${projection.hook} message rule`)
-    }
+    let result = ruleMessage(op, ctx)
+    // The message of a moment-matching rule is the projection divided by the cavity it was shown: against the flat cavity
+    // that is the same message plus the wide one.
+    if (shown.widenedTarget && projection.hook === 'ep' && op.ep !== undefined)
+      result = { ...result, message: result.message.map((v, i) => v + (i === 1 ? FLAT_CAVITY_PRECISION / power : 0)) }
     return { kind: 'message', eta: result.message }
   } catch (err) {
     if (err instanceof ImproperMessageError) {

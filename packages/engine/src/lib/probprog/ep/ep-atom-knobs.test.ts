@@ -1,9 +1,11 @@
 // The knobs an atom opens on are a typed record of the EP knobs: a misspelled one is refused where the atom is declared and where a
 // run is asked for, instead of running on the defaults and reporting success.
 import { describe, expect, it } from 'vitest'
-import { epAtoms } from './ep-atom-list.ts'
-import { atomRun, defineAtom } from './ep-atoms.ts'
-import { gaussianAtom } from './ep-atoms-conjugate.ts'
+import { defineAtom } from './_define.ts'
+import { epAtom, epAtoms } from './ep-atom-list.ts'
+import { atomRun } from './ep-atoms.ts'
+
+const gaussianAtom = epAtom('gaussian')
 
 describe('the knobs of an atom', () => {
   const problem = gaussianAtom.problem(gaussianAtom.defaults)

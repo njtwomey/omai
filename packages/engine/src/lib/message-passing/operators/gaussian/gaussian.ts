@@ -6,7 +6,7 @@
  */
 
 import { OmaiError } from '../../../base/index.ts'
-import { arg, errorText, evidenceOrNaN, keyOf, memoised } from '../../core/_messages.ts'
+import { arg, errorText, keyOf, memoised } from '../../core/_messages.ts'
 import {
   allProper,
   etaOf,
@@ -19,11 +19,11 @@ import {
   numberParam,
   rawSum,
   scalarOf,
-  siteMessage,
   vectorParam,
 } from '../../core/args.ts'
+import { defineOperator, messageRule, siteRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
-import { gamma, gammaShapeRate } from '../../core/families.ts'
+import { gammaShapeRate } from '../../core/families.ts'
 import { param } from '../../core/params.ts'
 import type { Arg, FactorOperator, FamilyKind, OperatorContext, OperatorResult, Params } from '../../core/types.ts'
 import { gaussianGrid, tiltedGrid, tiltedLogGrid } from '../../numerics/_quadrature.ts'
@@ -57,30 +57,33 @@ const ALL: readonly FamilyKind[] = [
  * prior.ep?.({ mode: 'ep', to: 0, args: [messageArg(gaussian, gaussian.flat)], params: { eta }, power: 1 }).message // => [0.25, 0.25]
  * ```
  */
-export const prior: FactorOperator = {
+export const prior: FactorOperator = defineOperator({
   name: 'prior',
   description: 'a normalised density with the given natural parameters on one variable',
   ports: [{ name: 'x', accepts: ALL }],
   params: { eta: param.vector() },
-  support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
   check: (params, families) =>
     vectorParam(params, 'eta').length === families[0]?.size
       ? undefined
       : 'prior: eta must have the length of the family',
-  ep: (c) => ({ message: vectorParam(c.params, 'eta') }),
-  vmp: (c) => ({ message: vectorParam(c.params, 'eta') }),
-  bp: (c) => ({ message: vectorParam(c.params, 'eta') }),
-  logEvidence: (c) => {
-    const a = arg(c, 0)
-    const p = vectorParam(c.params, 'eta')
-    return a.family.logPartition(rawSum(etaOf(a), p)) - a.family.logPartition(p)
+  rules: {
+    ep: messageRule((c) => ({ message: vectorParam(c.params, 'eta') })),
+    vmp: messageRule((c) => ({ message: vectorParam(c.params, 'eta') })),
+    bp: messageRule((c) => ({ message: vectorParam(c.params, 'eta') })),
   },
-  expectedLog: (c) => {
-    const a = arg(c, 0)
-    const p = vectorParam(c.params, 'eta')
-    return a.family.pair(p, a.family.moments(etaOf(a))) - a.family.logPartition(p)
+  evidence: {
+    ep: (c) => {
+      const a = arg(c, 0)
+      const p = vectorParam(c.params, 'eta')
+      return a.family.logPartition(rawSum(etaOf(a), p)) - a.family.logPartition(p)
+    },
+    vmp: (c) => {
+      const a = arg(c, 0)
+      const p = vectorParam(c.params, 'eta')
+      return a.family.pair(p, a.family.moments(etaOf(a))) - a.family.logPartition(p)
+    },
   },
-}
+})
 
 const gaussianPorts = [
   { name: 'x', accepts: ['gaussian'] as const, constant: true },
@@ -108,43 +111,46 @@ function expectedSquare(x: Arg, mean: Arg): number {
  * gaussianOperator.ep?.(c).message // => [1.6, 0.8]
  * ```
  */
-export const gaussianOperator: FactorOperator = {
+export const gaussianOperator: FactorOperator = defineOperator({
   name: 'gaussian',
   description: 'x ~ N(mean, 1 / precision) with a fixed precision',
   ports: gaussianPorts,
   params: { precision: param.positive() },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c): OperatorResult => {
-    const o = gaussianOf(arg(c, 1 - c.to))
-    return { message: gaussianMessage(o.mean, o.variance + 1 / numberParam(c.params, 'precision')) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const o = gaussianOf(arg(c, 1 - c.to))
+      return { message: gaussianMessage(o.mean, o.variance + 1 / numberParam(c.params, 'precision')) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const tau = numberParam(c.params, 'precision')
+      const o = gaussianOf(arg(c, 1 - c.to))
+      return { message: [tau * o.mean, tau] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const tau = numberParam(c.params, 'precision')
-    const o = gaussianOf(arg(c, 1 - c.to))
-    return { message: [tau * o.mean, tau] }
+  evidence: {
+    // The two cavities need only be proper together (a message that is the site of a likelihood can have a negative
+    // precision), so the integral is taken over the pair in natural parameters.
+    ep: (c) => {
+      const tau = numberParam(c.params, 'precision')
+      const x = arg(c, 0)
+      const m = arg(c, 1)
+      const base = 0.5 * Math.log(tau / (2 * Math.PI))
+      if (x.value !== undefined && m.value !== undefined) return base - 0.5 * tau * (scalarOf(x) - scalarOf(m)) ** 2
+      if (x.value !== undefined || m.value !== undefined) {
+        const [v, e] = x.value !== undefined ? [scalarOf(x), etaOf(m)] : [scalarOf(m), etaOf(x)]
+        return base - 0.5 * tau * v * v + logGaussianIntegral([(e[0] ?? 0) + tau * v], [(e[1] ?? 0) + tau], 1)
+      }
+      const ex = etaOf(x)
+      const em = etaOf(m)
+      const p = [(ex[1] ?? 0) + tau, -tau, -tau, (em[1] ?? 0) + tau]
+      return base + logGaussianIntegral([ex[0] ?? 0, em[0] ?? 0], p, 2)
+    },
+    vmp: (c) => {
+      const tau = numberParam(c.params, 'precision')
+      return 0.5 * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * expectedSquare(arg(c, 0), arg(c, 1))
+    },
   },
-  // The two cavities need only be proper together (a message that is the site of a likelihood can have a negative
-  // precision), so the integral is taken over the pair in natural parameters.
-  logEvidence: (c) => {
-    const tau = numberParam(c.params, 'precision')
-    const x = arg(c, 0)
-    const m = arg(c, 1)
-    const base = 0.5 * Math.log(tau / (2 * Math.PI))
-    if (x.value !== undefined && m.value !== undefined) return base - 0.5 * tau * (scalarOf(x) - scalarOf(m)) ** 2
-    if (x.value !== undefined || m.value !== undefined) {
-      const [v, e] = x.value !== undefined ? [scalarOf(x), etaOf(m)] : [scalarOf(m), etaOf(x)]
-      return base - 0.5 * tau * v * v + logGaussianIntegral([(e[0] ?? 0) + tau * v], [(e[1] ?? 0) + tau], 1)
-    }
-    const ex = etaOf(x)
-    const em = etaOf(m)
-    const p = [(ex[1] ?? 0) + tau, -tau, -tau, (em[1] ?? 0) + tau]
-    return base + logGaussianIntegral([ex[0] ?? 0, em[0] ?? 0], p, 2)
-  },
-  expectedLog: (c) => {
-    const tau = numberParam(c.params, 'precision')
-    return 0.5 * Math.log(tau / (2 * Math.PI)) - 0.5 * tau * expectedSquare(arg(c, 0), arg(c, 1))
-  },
-}
+})
 
 const TILT_POINTS = 801
 /**
@@ -260,7 +266,7 @@ function precisionTiltGrid(
  * gaussianGammaPrecision.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(2)) // => ['1.48', '1.41']
  * ```
  */
-export const gaussianGammaPrecision: FactorOperator = {
+export const gaussianGammaPrecision: FactorOperator = defineOperator({
   name: 'gaussian-gamma-precision',
   description: 'x ~ N(mean, 1 / (scale lambda + offset)) with lambda a gamma-distributed precision',
   ports: [...gaussianPorts, { name: 'precision', accepts: ['gamma'] }],
@@ -273,49 +279,52 @@ export const gaussianGammaPrecision: FactorOperator = {
       return errorText(e)
     }
   },
-  support: { ep: 'numeric', vmp: 'exact' },
-  // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is shown very wide by the engine (`needsDensity`).
-  readsTarget: (to) => to === 2,
-  needsDensity: true,
-  ep: (c): OperatorResult => {
-    const { scale, offset } = precisionParams(c.params)
-    const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
-    if (c.to === 0) return { message: gaussianSiteMessage(etaOf(arg(c, 0)), tilt.x.mean, tilt.x.variance) }
-    if (c.to === 1) return { message: gaussianSiteMessage(etaOf(arg(c, 1)), tilt.u.mean, tilt.u.variance) }
-    return { message: siteMessage(gamma, etaOf(arg(c, 2)), [tilt.logLambda, tilt.lambda]) }
+  rules: {
+    // The tilted distribution of the factor against the three cavities: a Gaussian for `x` and for the mean, the moments of
+    // `log lambda` and `lambda` for the precision (the engine projects them).
+    ep: siteRule((c) => {
+      const { scale, offset } = precisionParams(c.params)
+      const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
+      if (c.to === 0) return tilt.x
+      if (c.to === 1) return tilt.u
+      return { moments: [tilt.logLambda, tilt.lambda] }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const { scale, offset } = precisionParams(c.params)
+      if (offset !== 0)
+        throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
+      const lambda = arg(c, 2)
+      const mo = lambda.family.moments(etaOf(lambda))
+      const meanLambda = scale * (mo[1] ?? 0)
+      if (c.to === 2) return { message: [0.5, -0.5 * scale * expectedSquare(arg(c, 0), arg(c, 1))] }
+      const o = gaussianOf(arg(c, c.to === 0 ? 1 : 0))
+      return { message: [meanLambda * o.mean, meanLambda] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const { scale, offset } = precisionParams(c.params)
-    if (offset !== 0)
-      throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
-    const lambda = arg(c, 2)
-    const mo = lambda.family.moments(etaOf(lambda))
-    const meanLambda = scale * (mo[1] ?? 0)
-    if (c.to === 2) return { message: [0.5, -0.5 * scale * expectedSquare(arg(c, 0), arg(c, 1))] }
-    const o = gaussianOf(arg(c, c.to === 0 ? 1 : 0))
-    return { message: [meanLambda * o.mean, meanLambda] }
-  },
-  // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
-  // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
-  logEvidence: (c) => {
-    return evidenceOrNaN(() => {
+  evidence: {
+    improperIsNaN: true,
+    // The integral of the cavities (unnormalised, so their masses are in it) times the factor: the Gaussian cavities' masses and the
+    // grid's integral over the precision, in which the gamma cavity's unnormalised density is already part of the weight.
+    ep: (c) => {
       const { scale, offset } = precisionParams(c.params)
       const tilt = precisionTilt(gaussianOf(arg(c, 0)), gaussianOf(arg(c, 1)), etaOf(arg(c, 2)), scale, offset, c)
       return massOf(arg(c, 0)) + massOf(arg(c, 1)) + tilt.logZ
-    })
+    },
+    vmp: (c) => {
+      const { scale, offset } = precisionParams(c.params)
+      if (offset !== 0)
+        throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
+      const lambda = arg(c, 2)
+      const mo = lambda.family.moments(etaOf(lambda))
+      return (
+        0.5 * (Math.log(scale) + (mo[0] ?? 0) - Math.log(2 * Math.PI)) -
+        0.5 * scale * (mo[1] ?? 0) * expectedSquare(arg(c, 0), arg(c, 1))
+      )
+    },
   },
-  expectedLog: (c) => {
-    const { scale, offset } = precisionParams(c.params)
-    if (offset !== 0)
-      throw new OmaiError('not-implemented', 'gaussian-gamma-precision: a precision offset has no variational rule')
-    const lambda = arg(c, 2)
-    const mo = lambda.family.moments(etaOf(lambda))
-    return (
-      0.5 * (Math.log(scale) + (mo[0] ?? 0) - Math.log(2 * Math.PI)) -
-      0.5 * scale * (mo[1] ?? 0) * expectedSquare(arg(c, 0), arg(c, 1))
-    )
-  },
-}
+  // The precision's own cavity must be a gamma density; a Gaussian port whose cavity is still flat is shown very wide by the engine.
+  traits: { readsTarget: (to) => to === 2, needsDensity: true },
+})
 
 /** The `scale` (default 1) and `offset` (default 0) of the precision `scale lambda + offset` of a `gaussian-gamma-precision` factor. */
 function precisionParams(params: Params): { readonly scale: number; readonly offset: number } {
@@ -354,7 +363,7 @@ const logScaleAt =
  * gaussianLogScale.ep?.({ mode: 'ep', to: 1, args, params: { loc: 0 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['2.348', '2.500']
  * ```
  */
-export const gaussianLogScale: FactorOperator = {
+export const gaussianLogScale: FactorOperator = defineOperator({
   name: 'gaussian-log-scale',
   description: 'x ~ N(loc, exp(2 s)) with a Gaussian log scale s and an observed x',
   ports: [
@@ -362,27 +371,33 @@ export const gaussianLogScale: FactorOperator = {
     { name: 'logScale', accepts: ['gaussian'] as const },
   ],
   params: { loc: param.number({ optional: true }) },
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: (to) => to === 1,
-  // The mean field: the non-conjugate message of log N(x; loc, exp(2 s)) in the log scale (and in a latent x), by quadrature.
-  vmp: (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleAt(c)) }),
-  expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleAt(c)),
-  ep: (c): OperatorResult => {
-    if (c.to !== 1) throw new ParameterError('gaussian-log-scale: the value x must be observed')
-    const y = gaussianOf(arg(c, 0)).mean
-    const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
-    const s = gaussianOf(arg(c, 1))
-    const t = tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v))
-    return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      if (c.to !== 1) throw new ParameterError('gaussian-log-scale: the value x must be observed')
+      const y = gaussianOf(arg(c, 0)).mean
+      const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
+      const s = gaussianOf(arg(c, 1))
+      const t = tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v))
+      return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+    }, 'numeric'),
+    // The mean field: the non-conjugate message of log N(x; loc, exp(2 s)) in the log scale (and in a latent x), by quadrature.
+    vmp: messageRule(
+      (c): OperatorResult => ({ message: numericMessage(quadraturePorts(c.args), c.to, logScaleAt(c)) }),
+      'numeric',
+    ),
   },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const y = gaussianOf(arg(c, 0)).mean
-    const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
-    const s = gaussianOf(arg(c, 1))
-    return massOf(arg(c, 1)) + tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v)).logMass
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const y = gaussianOf(arg(c, 0)).mean
+      const loc = c.params['loc'] === undefined ? 0 : numberParam(c.params, 'loc')
+      const s = gaussianOf(arg(c, 1))
+      return massOf(arg(c, 1)) + tiltedLogGrid(s.mean, s.variance, (v) => logLikelihoodOfLogScale(y, loc, v)).logMass
+    },
+    vmp: (c) => numericExpectedLog(quadraturePorts(c.args), logScaleAt(c)),
   },
-}
+  traits: { readsTarget: (to) => to === 1 },
+})
 
 /**
  * x ~ N(mu, 1 / (c lambda)) with the mean and the precision one normal-gamma variable (mu, lambda) and `c` a known
@@ -404,7 +419,7 @@ export const gaussianLogScale: FactorOperator = {
  * gaussianNormalGamma.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message // => [2, -0.5, -2, 0.5]
  * ```
  */
-export const gaussianNormalGamma: FactorOperator = {
+export const gaussianNormalGamma: FactorOperator = defineOperator({
   name: 'gaussian-normal-gamma',
   description: 'x ~ N(mu, 1 / (c lambda)) with (mu, lambda) normal-gamma',
   ports: [
@@ -412,45 +427,48 @@ export const gaussianNormalGamma: FactorOperator = {
     { name: 'theta', accepts: ['normal-gamma'] },
   ],
   params: { precision: param.positive({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  ep: (c): OperatorResult => {
-    const x = arg(c, 0)
-    if (x.value === undefined)
-      throw new ParameterError('gaussian-normal-gamma: expectation propagation needs the observation observed')
-    if (c.to !== 1) throw new ParameterError('gaussian-normal-gamma: the value is observed, nothing is sent to it')
-    const k = numberParam(c.params, 'precision', 1)
-    const v = gaussianOf(x).mean
-    return { message: [k * v, -k / 2, (-k * v * v) / 2, 0.5] }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const x = arg(c, 0)
+      if (x.value === undefined)
+        throw new ParameterError('gaussian-normal-gamma: expectation propagation needs the observation observed')
+      if (c.to !== 1) throw new ParameterError('gaussian-normal-gamma: the value is observed, nothing is sent to it')
+      const k = numberParam(c.params, 'precision', 1)
+      const v = gaussianOf(x).mean
+      return { message: [k * v, -k / 2, (-k * v * v) / 2, 0.5] }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      const x = gaussianOf(arg(c, 0))
+      const k = numberParam(c.params, 'precision', 1)
+      if (c.to === 1) return { message: [k * x.mean, -k / 2, (-k * (x.variance + x.mean ** 2)) / 2, 0.5] }
+      const t = arg(c, 1)
+      const mo = t.family.moments(etaOf(t))
+      return { message: [mo[0] ?? 0, mo[2] ?? 0] }
+    }),
   },
-  vmp: (c): OperatorResult => {
-    const x = gaussianOf(arg(c, 0))
-    const k = numberParam(c.params, 'precision', 1)
-    if (c.to === 1) return { message: [k * x.mean, -k / 2, (-k * (x.variance + x.mean ** 2)) / 2, 0.5] }
-    const t = arg(c, 1)
-    const mo = t.family.moments(etaOf(t))
-    return { message: [mo[0] ?? 0, mo[2] ?? 0] }
+  evidence: {
+    ep: (c) => {
+      const x = arg(c, 0)
+      const t = arg(c, 1)
+      if (x.value === undefined || !allProper(c.args)) return Number.NaN
+      const k = numberParam(c.params, 'precision', 1)
+      const v = gaussianOf(x).mean
+      // N(x | mu, 1 / (k lambda)) = sqrt(k / 2 pi) exp(message . statistics): the mass of cavity times it is the new log partition.
+      return (
+        0.5 * Math.log(k / (2 * Math.PI)) +
+        t.family.logPartition(rawSum(etaOf(t), [k * v, -k / 2, (-k * v * v) / 2, 0.5]))
+      )
+    },
+    vmp: (c) => {
+      const x = gaussianOf(arg(c, 0))
+      const k = numberParam(c.params, 'precision', 1)
+      const t = arg(c, 1)
+      const mo = t.family.moments(etaOf(t))
+      const quad = (x.variance + x.mean ** 2) * (mo[2] ?? 0) - 2 * x.mean * (mo[0] ?? 0) + (mo[1] ?? 0)
+      return 0.5 * ((mo[3] ?? 0) + Math.log(k) - Math.log(2 * Math.PI)) - 0.5 * k * quad
+    },
   },
-  logEvidence: (c) => {
-    const x = arg(c, 0)
-    const t = arg(c, 1)
-    if (x.value === undefined || !allProper(c.args)) return Number.NaN
-    const k = numberParam(c.params, 'precision', 1)
-    const v = gaussianOf(x).mean
-    // N(x | mu, 1 / (k lambda)) = sqrt(k / 2 pi) exp(message . statistics): the mass of cavity times it is the new log partition.
-    return (
-      0.5 * Math.log(k / (2 * Math.PI)) +
-      t.family.logPartition(rawSum(etaOf(t), [k * v, -k / 2, (-k * v * v) / 2, 0.5]))
-    )
-  },
-  expectedLog: (c) => {
-    const x = gaussianOf(arg(c, 0))
-    const k = numberParam(c.params, 'precision', 1)
-    const t = arg(c, 1)
-    const mo = t.family.moments(etaOf(t))
-    const quad = (x.variance + x.mean ** 2) * (mo[2] ?? 0) - 2 * x.mean * (mo[0] ?? 0) + (mo[1] ?? 0)
-    return 0.5 * ((mo[3] ?? 0) + Math.log(k) - Math.log(2 * Math.PI)) - 0.5 * k * quad
-  },
-}
+})
 
 /**
  * y = a b for Gaussian a and b: the product of two Gaussian variables. The message to y matches the exact mean and
@@ -468,7 +486,7 @@ export const gaussianNormalGamma: FactorOperator = {
  * message?.map((v) => Math.round(v * 1e9) / 1e9) // => [0.206896552, 0.034482759]
  * ```
  */
-export const product: FactorOperator = {
+export const product: FactorOperator = defineOperator({
   name: 'product',
   description: 'y = a b for Gaussian a and b',
   ports: [
@@ -477,82 +495,84 @@ export const product: FactorOperator = {
     { name: 'b', accepts: ['gaussian'], constant: true },
   ],
   params: {},
-  support: { ep: 'numeric', vmp: 'exact' },
-  readsTarget: (to) => to !== 0,
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const a = gaussianOf(arg(c, 1))
+      const b = gaussianOf(arg(c, 2))
+      if (c.to === 0) {
+        const incoming = etaOf(arg(c, 0))
+        const closed = {
+          mean: a.mean * b.mean,
+          variance: a.variance * b.variance + a.variance * b.mean ** 2 + b.variance * a.mean ** 2,
+        }
+        // With nothing known about y the message is the matched pushforward; otherwise the product's distribution is
+        // weighted by the incoming message of y before matching, as EP asks (by a product rule over a and b).
+        if ((incoming[0] ?? 0) === 0 && (incoming[1] ?? 0) === 0)
+          return { message: gaussianMessage(closed.mean, closed.variance) }
+        const y = gaussianOf(arg(c, 0))
+        // Given a, y is Gaussian (mean a m_b, variance a^2 v_b): the weight of a node is the overlap with the incoming
+        // message of y, and the tilted y of that node a product of two Gaussians, in closed form.
+        const na = gaussianGrid(a.mean, a.variance)
+        let mass = 0
+        let m1 = 0
+        let m2 = 0
+        for (let i = 0; i < na.x.length; i++) {
+          const node = na.x[i] ?? 0
+          const s2 = node * node * b.variance
+          const center = node * b.mean
+          const w = (na.w[i] ?? 0) * Math.exp(logNormal(center, y.mean, y.variance + s2))
+          const post = s2 > 0 ? 1 / (1 / s2 + 1 / y.variance) : 0
+          const mp = s2 > 0 ? post * (center / s2 + y.mean / y.variance) : center
+          mass += w
+          m1 += w * mp
+          m2 += w * (post + mp * mp)
+        }
+        const mean = m1 / mass
+        const variance = m2 / mass - mean * mean
+        return { message: gaussianSiteMessage(incoming, mean, variance) }
+      }
+      const [self, other] = c.to === 1 ? [a, b] : [b, a]
+      const y = gaussianOf(arg(c, 0))
+      const tilted = tiltedGrid(self.mean, self.variance, productDensity(other, y))
+      return { message: gaussianSiteMessage(etaOf(arg(c, c.to)), tilted.mean, tilted.variance) }
+    }, 'numeric'),
+    vmp: messageRule((c): OperatorResult => {
+      const a = gaussianOf(arg(c, 1))
+      const b = gaussianOf(arg(c, 2))
+      if (c.to === 0)
+        return {
+          message: gaussianMessage(
+            a.mean * b.mean,
+            a.variance * b.variance + a.variance * b.mean ** 2 + b.variance * a.mean ** 2,
+          ),
+        }
+      const out = arg(c, 0).eta
+      if (out === undefined)
+        throw new OmaiError(
+          'not-implemented',
+          'a deterministic factor with an observed output has no variational message',
+        )
+      const other = c.to === 1 ? b : a
+      return { message: [(out[0] ?? 0) * other.mean, (out[1] ?? 0) * (other.variance + other.mean ** 2)] }
+    }),
+  },
+  evidence: {
+    ep: (c) => {
+      // A product whose output has no other factor (nothing observed downstream) has a flat cavity at y: no mass to report.
+      if (!allProper(c.args)) return Number.NaN
+      const a = gaussianOf(arg(c, 1))
+      const b = gaussianOf(arg(c, 2))
+      const y = gaussianOf(arg(c, 0))
+      const mass = tiltedGrid(a.mean, a.variance, productDensity(b, y)).mass
+      return massOf(arg(c, 0)) + massOf(arg(c, 1)) + massOf(arg(c, 2)) + Math.log(mass)
+    },
+    vmp: () => 0,
+  },
   // Deterministic: under the mean field `y` is the pushforward of `a` and `b` (the moments of a product of independent variables are
   // closed form, and are all a Gaussian reader of `y` sees), and the message to `a` is the expected log of the cavity `(h, J)` of
   // `y` over `b`: `[h E b, J E b^2]`.
-  defines: 0,
-  vmp: (c): OperatorResult => {
-    const a = gaussianOf(arg(c, 1))
-    const b = gaussianOf(arg(c, 2))
-    if (c.to === 0)
-      return {
-        message: gaussianMessage(
-          a.mean * b.mean,
-          a.variance * b.variance + a.variance * b.mean ** 2 + b.variance * a.mean ** 2,
-        ),
-      }
-    const out = arg(c, 0).eta
-    if (out === undefined)
-      throw new OmaiError(
-        'not-implemented',
-        'a deterministic factor with an observed output has no variational message',
-      )
-    const other = c.to === 1 ? b : a
-    return { message: [(out[0] ?? 0) * other.mean, (out[1] ?? 0) * (other.variance + other.mean ** 2)] }
-  },
-  expectedLog: () => 0,
-  ep: (c): OperatorResult => {
-    const a = gaussianOf(arg(c, 1))
-    const b = gaussianOf(arg(c, 2))
-    if (c.to === 0) {
-      const incoming = etaOf(arg(c, 0))
-      const closed = {
-        mean: a.mean * b.mean,
-        variance: a.variance * b.variance + a.variance * b.mean ** 2 + b.variance * a.mean ** 2,
-      }
-      // With nothing known about y the message is the matched pushforward; otherwise the product's distribution is
-      // weighted by the incoming message of y before matching, as EP asks (by a product rule over a and b).
-      if ((incoming[0] ?? 0) === 0 && (incoming[1] ?? 0) === 0)
-        return { message: gaussianMessage(closed.mean, closed.variance) }
-      const y = gaussianOf(arg(c, 0))
-      // Given a, y is Gaussian (mean a m_b, variance a^2 v_b): the weight of a node is the overlap with the incoming
-      // message of y, and the tilted y of that node a product of two Gaussians, in closed form.
-      const na = gaussianGrid(a.mean, a.variance)
-      let mass = 0
-      let m1 = 0
-      let m2 = 0
-      for (let i = 0; i < na.x.length; i++) {
-        const node = na.x[i] ?? 0
-        const s2 = node * node * b.variance
-        const center = node * b.mean
-        const w = (na.w[i] ?? 0) * Math.exp(logNormal(center, y.mean, y.variance + s2))
-        const post = s2 > 0 ? 1 / (1 / s2 + 1 / y.variance) : 0
-        const mp = s2 > 0 ? post * (center / s2 + y.mean / y.variance) : center
-        mass += w
-        m1 += w * mp
-        m2 += w * (post + mp * mp)
-      }
-      const mean = m1 / mass
-      const variance = m2 / mass - mean * mean
-      return { message: gaussianSiteMessage(incoming, mean, variance) }
-    }
-    const [self, other] = c.to === 1 ? [a, b] : [b, a]
-    const y = gaussianOf(arg(c, 0))
-    const tilted = tiltedGrid(self.mean, self.variance, productDensity(other, y))
-    return { message: gaussianSiteMessage(etaOf(arg(c, c.to)), tilted.mean, tilted.variance) }
-  },
-  logEvidence: (c) => {
-    // A product whose output has no other factor (nothing observed downstream) has a flat cavity at y: no mass to report.
-    if (!allProper(c.args)) return Number.NaN
-    const a = gaussianOf(arg(c, 1))
-    const b = gaussianOf(arg(c, 2))
-    const y = gaussianOf(arg(c, 0))
-    const mass = tiltedGrid(a.mean, a.variance, productDensity(b, y)).mass
-    return massOf(arg(c, 0)) + massOf(arg(c, 1)) + massOf(arg(c, 2)) + Math.log(mass)
-  },
-}
+  traits: { readsTarget: (to) => to !== 0, defines: 0 },
+})
 
 /** g(a) = integral of the other factor against the output's incoming message: N(a m_b; m_y, a^2 v_b + v_y). */
 function productDensity(
@@ -580,7 +600,7 @@ function productDensity(
  * equal.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message // => [0.5, 0.5]
  * ```
  */
-export const equal: FactorOperator = {
+export const equal: FactorOperator = defineOperator({
   name: 'equal',
   description: 'x = y',
   ports: [
@@ -588,18 +608,21 @@ export const equal: FactorOperator = {
     { name: 'y', accepts: ALL },
   ],
   params: {},
-  support: { ep: 'exact', vmp: 'exact', bp: 'exact' },
-  // A copy defines x from y: under the mean field x is y, so its belief is y's and what x's other factors say goes to y.
-  defines: 0,
   check: (_, families) =>
     families[0]?.kind === families[1]?.kind && families[0]?.size === families[1]?.size
       ? undefined
       : 'equal: both variables must be of one family',
-  ep: (c) => ({ message: etaOf(arg(c, 1 - c.to)) }),
-  vmp: (c) => ({ message: etaOf(arg(c, 1 - c.to)) }),
-  bp: (c) => ({ message: etaOf(arg(c, 1 - c.to)) }),
-  logEvidence: (c) => {
-    const a = arg(c, 0)
-    return a.family.logPartition(rawSum(etaOf(a), etaOf(arg(c, 1))))
+  rules: {
+    ep: messageRule((c) => ({ message: etaOf(arg(c, 1 - c.to)) })),
+    vmp: messageRule((c) => ({ message: etaOf(arg(c, 1 - c.to)) })),
+    bp: messageRule((c) => ({ message: etaOf(arg(c, 1 - c.to)) })),
   },
-}
+  evidence: {
+    ep: (c) => {
+      const a = arg(c, 0)
+      return a.family.logPartition(rawSum(etaOf(a), etaOf(arg(c, 1))))
+    },
+  },
+  // A copy defines x from y: under the mean field x is y, so its belief is y's and what x's other factors say goes to y.
+  traits: { defines: 0 },
+})

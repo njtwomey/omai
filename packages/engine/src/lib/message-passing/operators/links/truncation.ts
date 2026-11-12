@@ -8,6 +8,7 @@
 import { logAddExp, OmaiError } from '../../../base/index.ts'
 import { arg } from '../../core/_messages.ts'
 import { allProper, etaOf, gaussianOf, gaussianSiteMessage, massOf, numberParam, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import { bernoulli } from '../../core/families.ts'
 import { type ParamSpec, param } from '../../core/params.ts'
 import { truncatedNormalMoments } from '../../core/truncated.ts'
@@ -85,38 +86,41 @@ function stepOperator(
       : set
           .map(([lo, hi]) => truncatedNormalMoments(m, v, lo, hi).logMass)
           .reduce((a, b) => logAddExp(a, b), Number.NEGATIVE_INFINITY)
-  return {
+  return defineOperator({
     name,
     description,
     params: declared,
     ports: [outcomePort, valuePort],
-    support: { ep: 'exact' },
-    readsTarget: (to) => to === 1,
-    ep: (c): OperatorResult => {
-      const x = gaussianOf(arg(c, 1))
-      const { inside, outside } = regions(c.params)
-      if (c.to === 0) {
+    rules: {
+      ep: messageRule((c): OperatorResult => {
+        const x = gaussianOf(arg(c, 1))
+        const { inside, outside } = regions(c.params)
+        if (c.to === 0) {
+          const logIn = massOfSet(inside, x.mean, x.variance)
+          const logOut = massOfSet(outside, x.mean, x.variance)
+          return { message: [logIn - logOut] }
+        }
+        const pi = outcomeProbability(arg(c, 0))
+        const t = regionMoments(x.mean, x.variance, stepRegions(pi, inside, outside))
+        return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+      }),
+    },
+    evidence: {
+      ep: (c) => {
+        if (!allProper(c.args)) return Number.NaN
+        const x = gaussianOf(arg(c, 1))
+        const { inside, outside } = regions(c.params)
         const logIn = massOfSet(inside, x.mean, x.variance)
         const logOut = massOfSet(outside, x.mean, x.variance)
-        return { message: [logIn - logOut] }
-      }
-      const pi = outcomeProbability(arg(c, 0))
-      const t = regionMoments(x.mean, x.variance, stepRegions(pi, inside, outside))
-      return { message: gaussianSiteMessage(etaOf(arg(c, 1)), t.mean, t.variance) }
+        const b = arg(c, 0)
+        if (b.value !== undefined) return massOf(arg(c, 1)) + (scalarOf(b) > 0 ? logIn : logOut)
+        const eta = etaOf(b)[0] ?? 0
+        // Z = e^{A_x} (p_out + e^eta p_in), with the outcome's unnormalised message exp(eta b).
+        return massOf(arg(c, 1)) + logAddExp(logOut, eta + logIn)
+      },
     },
-    logEvidence: (c) => {
-      if (!allProper(c.args)) return Number.NaN
-      const x = gaussianOf(arg(c, 1))
-      const { inside, outside } = regions(c.params)
-      const logIn = massOfSet(inside, x.mean, x.variance)
-      const logOut = massOfSet(outside, x.mean, x.variance)
-      const b = arg(c, 0)
-      if (b.value !== undefined) return massOf(arg(c, 1)) + (scalarOf(b) > 0 ? logIn : logOut)
-      const eta = etaOf(b)[0] ?? 0
-      // Z = e^{A_x} (p_out + e^eta p_in), with the outcome's unnormalised message exp(eta b).
-      return massOf(arg(c, 1)) + logAddExp(logOut, eta + logIn)
-    },
-  }
+    traits: { readsTarget: (to) => to === 1 },
+  })
 }
 
 /**
@@ -246,71 +250,73 @@ function albertChib(c: OperatorContext): {
  * probit.ep?.({ mode: 'ep', to: 1, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.8276', '0.4669']
  * ```
  */
-export const probit: FactorOperator = {
+export const probit: FactorOperator = defineOperator({
   name: 'probit',
   description: 'b | x ~ Bernoulli(Phi(x / noise))',
   ports: [outcomePort, valuePort],
   params: { noise: param.positive({ optional: true }) },
-  support: { ep: 'exact', vmp: 'exact' },
-  readsTarget: (to) => to === 1,
-  power: true,
-  ep: (c): OperatorResult => {
-    const sigma = numberParam(c.params, 'noise', 1)
-    if (c.power !== 1) return { message: poweredProbit(c, sigma).message }
-    const x = gaussianOf(arg(c, 1))
-    const s = Math.sqrt(sigma * sigma + x.variance)
-    const z = x.mean / s
-    if (c.to === 0) return { message: [logPhi(z) - logPhi(-z)] }
-    const pi = outcomeProbability(arg(c, 0))
-    if (pi === 1) return { message: probitSite(x.mean, x.variance, sigma) }
-    if (pi === 0) {
-      const [h, j] = probitSite(-x.mean, x.variance, sigma)
-      return { message: [-h, j] }
-    }
-    // The outcome is uncertain: the factor is (1 - pi) + (2 pi - 1) Phi(x / sigma), whose moments are closed forms.
-    const w0 = 1 - pi
-    const w1 = 2 * pi - 1
-    const { mean: m, variance: v } = x
-    const cdf = Phi(z)
-    const dens = phi(z)
-    const m0 = w0 + w1 * cdf
-    const m1 = w0 * m + w1 * (m * cdf + (v / s) * dens)
-    const m2 = w0 * (m * m + v) + w1 * ((v + m * m) * cdf + ((2 * m * v) / s - (m * v * v) / s ** 3) * dens)
-    const mean = m1 / m0
-    return { message: gaussianSiteMessage(etaOf(arg(c, 1)), mean, m2 / m0 - mean * mean) }
-  },
-  vmp: (c): OperatorResult => {
-    if (c.to === 0) throw new OmaiError('not-implemented', 'probit: the variational rule is for an observed outcome')
-    const { sign, sigma, x } = albertChib(c)
-    const u = (sign * x.mean) / sigma
-    // q(z) is N(E x, sigma^2) cut to the side of the outcome: its mean is E x + sign sigma phi(u) / Phi(u); the message is the
-    // expected log N(z; x, sigma^2) over it, a Gaussian in x of precision 1 / sigma^2 centred at E z.
-    const mean = x.mean + sign * sigma * millsRatio(u)
-    return { message: [mean / (sigma * sigma), 1 / (sigma * sigma)] }
-  },
-  expectedLog: (c) => {
-    const { sign, sigma, x } = albertChib(c)
-    // The augmented bound with q(z) at its optimum: log of the integral of exp(E_q(x) log N(z; x, sigma^2)) over the
-    // outcome's side, which is log Phi(sign E x / sigma) - Var x / (2 sigma^2).
-    return logPhi((sign * x.mean) / sigma) - x.variance / (2 * sigma * sigma)
-  },
-  logEvidence: (c) => {
-    if (!allProper(c.args)) return Number.NaN
-    const sigma = numberParam(c.params, 'noise', 1)
-    const x = gaussianOf(arg(c, 1))
-    if (c.power !== 1) {
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const sigma = numberParam(c.params, 'noise', 1)
+      if (c.power !== 1) return { message: poweredProbit(c, sigma).message }
+      const x = gaussianOf(arg(c, 1))
+      const s = Math.sqrt(sigma * sigma + x.variance)
+      const z = x.mean / s
+      if (c.to === 0) return { message: [logPhi(z) - logPhi(-z)] }
       const pi = outcomeProbability(arg(c, 0))
-      const p = c.power
-      return (
-        massOf(arg(c, 1)) +
-        (arg(c, 0).value === undefined ? massOf(arg(c, 0)) : 0) +
-        tiltedLogGrid(x.mean, x.variance, (v) => logProbitWeight(pi, v, sigma, p)).logMass
-      )
-    }
-    const z = x.mean / Math.sqrt(sigma * sigma + x.variance)
-    const b = arg(c, 0)
-    if (b.value !== undefined) return massOf(arg(c, 1)) + logPhi(scalarOf(b) > 0 ? z : -z)
-    const eta = etaOf(b)[0] ?? 0
-    return massOf(arg(c, 1)) + logAddExp(logPhi(-z), eta + logPhi(z))
+      if (pi === 1) return { message: probitSite(x.mean, x.variance, sigma) }
+      if (pi === 0) {
+        const [h, j] = probitSite(-x.mean, x.variance, sigma)
+        return { message: [-h, j] }
+      }
+      // The outcome is uncertain: the factor is (1 - pi) + (2 pi - 1) Phi(x / sigma), whose moments are closed forms.
+      const w0 = 1 - pi
+      const w1 = 2 * pi - 1
+      const { mean: m, variance: v } = x
+      const cdf = Phi(z)
+      const dens = phi(z)
+      const m0 = w0 + w1 * cdf
+      const m1 = w0 * m + w1 * (m * cdf + (v / s) * dens)
+      const m2 = w0 * (m * m + v) + w1 * ((v + m * m) * cdf + ((2 * m * v) / s - (m * v * v) / s ** 3) * dens)
+      const mean = m1 / m0
+      return { message: gaussianSiteMessage(etaOf(arg(c, 1)), mean, m2 / m0 - mean * mean) }
+    }),
+    vmp: messageRule((c): OperatorResult => {
+      if (c.to === 0) throw new OmaiError('not-implemented', 'probit: the variational rule is for an observed outcome')
+      const { sign, sigma, x } = albertChib(c)
+      const u = (sign * x.mean) / sigma
+      // q(z) is N(E x, sigma^2) cut to the side of the outcome: its mean is E x + sign sigma phi(u) / Phi(u); the message is the
+      // expected log N(z; x, sigma^2) over it, a Gaussian in x of precision 1 / sigma^2 centred at E z.
+      const mean = x.mean + sign * sigma * millsRatio(u)
+      return { message: [mean / (sigma * sigma), 1 / (sigma * sigma)] }
+    }),
   },
-}
+  evidence: {
+    ep: (c) => {
+      if (!allProper(c.args)) return Number.NaN
+      const sigma = numberParam(c.params, 'noise', 1)
+      const x = gaussianOf(arg(c, 1))
+      if (c.power !== 1) {
+        const pi = outcomeProbability(arg(c, 0))
+        const p = c.power
+        return (
+          massOf(arg(c, 1)) +
+          (arg(c, 0).value === undefined ? massOf(arg(c, 0)) : 0) +
+          tiltedLogGrid(x.mean, x.variance, (v) => logProbitWeight(pi, v, sigma, p)).logMass
+        )
+      }
+      const z = x.mean / Math.sqrt(sigma * sigma + x.variance)
+      const b = arg(c, 0)
+      if (b.value !== undefined) return massOf(arg(c, 1)) + logPhi(scalarOf(b) > 0 ? z : -z)
+      const eta = etaOf(b)[0] ?? 0
+      return massOf(arg(c, 1)) + logAddExp(logPhi(-z), eta + logPhi(z))
+    },
+    vmp: (c) => {
+      const { sign, sigma, x } = albertChib(c)
+      // The augmented bound with q(z) at its optimum: log of the integral of exp(E_q(x) log N(z; x, sigma^2)) over the
+      // outcome's side, which is log Phi(sign E x / sigma) - Var x / (2 sigma^2).
+      return logPhi((sign * x.mean) / sigma) - x.variance / (2 * sigma * sigma)
+    },
+  },
+  traits: { readsTarget: (to) => to === 1, power: true },
+})

@@ -17,7 +17,7 @@ import {
   logNormal,
   massOf,
 } from '../../core/args.ts'
-import { param } from '../../core/params.ts'
+import { defineOperator, messageRule } from '../../core/define.ts'
 import type { Arg, FactorOperator, OperatorContext, OperatorResult, Port } from '../../core/types.ts'
 import { tiltedGrid } from '../../numerics/_quadrature.ts'
 import { Phi, phi } from '../../numerics/_scalar.ts'
@@ -129,27 +129,29 @@ const ports: readonly Port[] = [
  * maximum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['0.8276', '1.4669']
  * ```
  */
-export const maximum: FactorOperator = {
+export const maximum: FactorOperator = defineOperator({
   name: 'max',
   description: 'y = max(a, b) for Gaussians',
-  ports,
+  ports: ports,
   params: {},
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: (to) => to !== 0,
+  rules: {
+    ep: messageRule(maxMessage, 'numeric'),
+    vmp: messageRule((c): OperatorResult => {
+      if (c.to === 0) {
+        const m = clarkMax(gaussianOf(arg(c, 1)), gaussianOf(arg(c, 2)))
+        return { message: gaussianMessage(m.mean, Math.max(m.variance, 1e-300)) }
+      }
+      return { message: definedFunctionMessage(c.args, c.to, (x) => Math.max(x[0] as number, x[1] as number)) }
+    }, 'numeric'),
+  },
+  evidence: {
+    ep: maxEvidence,
+    vmp: () => 0,
+  },
   // Deterministic: under the mean field `y` is the pushforward (Clark's moments), and the message to an input is the
   // non-conjugate message of the expected log of the output's cavity over the other input.
-  defines: 0,
-  vmp: (c): OperatorResult => {
-    if (c.to === 0) {
-      const m = clarkMax(gaussianOf(arg(c, 1)), gaussianOf(arg(c, 2)))
-      return { message: gaussianMessage(m.mean, Math.max(m.variance, 1e-300)) }
-    }
-    return { message: definedFunctionMessage(c.args, c.to, (x) => Math.max(x[0] as number, x[1] as number)) }
-  },
-  expectedLog: () => 0,
-  ep: maxMessage,
-  logEvidence: maxEvidence,
-}
+  traits: { readsTarget: (to) => to !== 0, defines: 0 },
+})
 
 const negate = (a: Arg): Arg => (a.eta === undefined ? a : { ...a, eta: [-(a.eta[0] ?? 0), a.eta[1] ?? 0] })
 
@@ -166,27 +168,29 @@ const negate = (a: Arg): Arg => (a.eta === undefined ? a : { ...a, eta: [-(a.eta
  * minimum.ep?.({ mode: 'ep', to: 0, args, params: {}, power: 1 }).message.map((v) => v.toFixed(4)) // => ['-0.8276', '1.4669']
  * ```
  */
-export const minimum: FactorOperator = {
+export const minimum: FactorOperator = defineOperator({
   name: 'min',
   description: 'y = min(a, b) for Gaussians',
-  ports,
+  ports: ports,
   params: {},
-  support: { ep: 'numeric', vmp: 'numeric' },
-  readsTarget: (to) => to !== 0,
-  defines: 0,
-  vmp: (c): OperatorResult => {
-    if (c.to === 0) {
-      const a = gaussianOf(arg(c, 1))
-      const b = gaussianOf(arg(c, 2))
-      const m = clarkMax({ mean: -a.mean, variance: a.variance }, { mean: -b.mean, variance: b.variance })
-      return { message: gaussianMessage(-m.mean, Math.max(m.variance, 1e-300)) }
-    }
-    return { message: definedFunctionMessage(c.args, c.to, (x) => Math.min(x[0] as number, x[1] as number)) }
+  rules: {
+    ep: messageRule((c): OperatorResult => {
+      const { message } = maxMessage({ ...c, args: c.args.map(negate) })
+      return { message: [-(message[0] ?? 0), message[1] ?? 0] }
+    }, 'numeric'),
+    vmp: messageRule((c): OperatorResult => {
+      if (c.to === 0) {
+        const a = gaussianOf(arg(c, 1))
+        const b = gaussianOf(arg(c, 2))
+        const m = clarkMax({ mean: -a.mean, variance: a.variance }, { mean: -b.mean, variance: b.variance })
+        return { message: gaussianMessage(-m.mean, Math.max(m.variance, 1e-300)) }
+      }
+      return { message: definedFunctionMessage(c.args, c.to, (x) => Math.min(x[0] as number, x[1] as number)) }
+    }, 'numeric'),
   },
-  expectedLog: () => 0,
-  ep: (c): OperatorResult => {
-    const { message } = maxMessage({ ...c, args: c.args.map(negate) })
-    return { message: [-(message[0] ?? 0), message[1] ?? 0] }
+  evidence: {
+    ep: (c) => maxEvidence({ ...c, args: c.args.map(negate) }),
+    vmp: () => 0,
   },
-  logEvidence: (c) => maxEvidence({ ...c, args: c.args.map(negate) }),
-}
+  traits: { readsTarget: (to) => to !== 0, defines: 0 },
+})

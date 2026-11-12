@@ -166,7 +166,7 @@ export type GridIntegrand = (rest: readonly number[]) => (x0: number) => number
  * @throws ParameterError for no axis or more than three.
  * @throws ImproperMessageError when the integrand has no mass under the cavities.
  */
-export function integrateGrid(
+function integrateGrid(
   axes: readonly GridAxis[],
   integrand: GridIntegrand,
   profile: GridProfile = gridProfiles.axes,

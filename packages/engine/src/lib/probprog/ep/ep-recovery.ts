@@ -5,8 +5,7 @@
  * coefficients are non-zero) against the true one. The EP programs of the pocs group use these for their check and their test.
  */
 
-import type { MixtureComponent } from './ep-atoms-quad.ts'
-import { normalCdf } from './ep-atoms-quad.ts'
+import { type MixtureComponent, normalCdf } from '../validation/index.ts'
 
 /**
  * The equal-tailed interval of a finite mixture of normals, by bisection on its distribution function.

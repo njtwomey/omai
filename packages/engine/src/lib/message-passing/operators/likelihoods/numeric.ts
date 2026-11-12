@@ -6,6 +6,7 @@
  */
 
 import { allProper, gaussianOf, massOf, scalarOf } from '../../core/args.ts'
+import { defineOperator, messageRule, tiltedRule } from '../../core/define.ts'
 import { ImproperMessageError, ParameterError } from '../../core/errors.ts'
 import type { ParamSpecOf } from '../../core/params.ts'
 import type {
@@ -77,20 +78,25 @@ export function numericOperator(options: NumericOperatorOptions): FactorOperator
     for (const a of c.args) logZ += massOf(a)
     return { moments: [t.mean, t.variance + t.mean * t.mean], logZ }
   }
-  return {
+  return defineOperator({
     name: options.name,
     description: options.description ?? `a factor given by its log density over ${n} Gaussian variable(s)`,
     ports,
     ...(options.params === undefined ? {} : { params: options.params }),
-    support: { ep: 'numeric', vmp: 'numeric' },
-    readsTarget: true,
-    power: true,
-    tilted,
-    // The mean field of a factor given by its log density: the non-conjugate message (natural gradient of the expected log).
-    vmp: (c) => ({
-      message: numericMessage(quadraturePorts(c.args), c.to, (x) => options.logDensity(x, c.params)),
-    }),
-    expectedLog: (c) => numericExpectedLog(quadraturePorts(c.args), (x) => options.logDensity(x, c.params)),
-    logEvidence: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
-  }
+    rules: {
+      ep: tiltedRule(tilted),
+      // The mean field of a factor given by its log density: the non-conjugate message (natural gradient of the expected log).
+      vmp: messageRule(
+        (c) => ({
+          message: numericMessage(quadraturePorts(c.args), c.to, (x) => options.logDensity(x, c.params)),
+        }),
+        'numeric',
+      ),
+    },
+    evidence: {
+      ep: (c) => (allProper(c.args) ? tilted({ ...c, to: 0 }).logZ : Number.NaN),
+      vmp: (c) => numericExpectedLog(quadraturePorts(c.args), (x) => options.logDensity(x, c.params)),
+    },
+    traits: { readsTarget: true, power: true },
+  })
 }

@@ -21,6 +21,7 @@ import {
   type Observed,
   type Params,
   type Port,
+  portsOf,
   takesPower,
   type VariableSpec,
 } from './types.ts'
@@ -101,9 +102,6 @@ export interface CompiledGraph {
   /** Whether some factor defines a variable as a deterministic function of others (`FactorOperator.defines`). */
   readonly hasDefined: boolean
 }
-
-const portsOf = (op: FactorOperator, params: Params): readonly Port[] =>
-  typeof op.ports === 'function' ? op.ports(params) : op.ports
 
 /** The family a constant argument is read in: the first kind its port accepts (sizes of vector kinds are not needed for a constant). */
 function constantFamily(port: Port, value?: Observed): Family {

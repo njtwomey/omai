@@ -9,5 +9,6 @@
 export * from './concentration.ts'
 export * from './function-scale.ts'
 export * from './gamma-scale.ts'
+export * from './list.ts'
 export * from './scale.ts'
 export * from './stick-breaking.ts'
