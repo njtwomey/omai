@@ -1164,3 +1164,21 @@ config in `bayesianGamMethod` (so a session with no config runs damped too).
   Other forms keep the method's defaults (`penalty` VMP runs at damping 0.3 in its test, 0 by default, unchanged).
 - Tests (`bayesian-gam-ep.test.ts`): the union's defaults for ARD (0.5, 60) and for the penalty form (0, 200); a session with no config on ARD
   stops within 60 sweeps with the curve within 0.1 sd of EP's and the log noise within 0.1, and the undamped run's log noise below -10.
+
+## 2026-11-12 An atom that composes a gate over families with a shared rate (`agent-a375bd-pgclaims`, group `composed-atoms`)
+
+- New: atom `gate-poisson-negative-binomial` (`ep/_atoms/composed-gates.ts`, family `gates`, the first file of setups that compose several pieces
+  and not one factor): a switch per observation (a Bernoulli latent with a Beta(1, 3) probability) chooses with `d.gate` between a Poisson and a
+  negative binomial whose mean is four times the Poisson rate, the rate log-linear on a covariate (two Gaussian coefficients) and the negative
+  binomial's dispersion half-normal. It compiles to one gate per observation with the Poisson and negative-binomial branches, and EP reports the
+  probability that each observation is the second branch. Knobs: seed, observations (30), true probability of the second branch, true dispersion.
+- Reference: a four-axis grid (w, b_0, b_1, dispersion; 25 points each, about 3 s) written in plain code, the switches summed out as a mixture,
+  with the probability of each switch the grid's posterior mean of its responsibility and the log evidence with every constant in it (the library's
+  `gridPosterior` takes 126 s on the same model: it evaluates the density through the program, 17 points per axis). Measured over five seeds of
+  thirty observations: means within 0.15 reference sds, spreads 0.7 to 1.0 for the rate and the switch probability and up to 1.5 for the dispersion,
+  the probability of each switch within 0.06 of the grid's (0.15 at twenty observations), the log evidence 0.07 to 0.5 nats below the grid's.
+  The tolerance is `measured`, declared at 0.3 sds, spreads 0.6 to 1.6, KS 0.2.
+- Digest: two items added (`atom/gate-poisson-negative-binomial`, `vmp/gate-poisson-negative-binomial`, which runs to its fixed point) and the
+  registry line (one atom's knobs), merged by hand because `--accept` refuses `--only`; the graph corpus has the two new lines (66 variables and 96
+  factors: 30 Bernoulli, 30 gates, 32 dot-constants). No `evidence` is declared on the atom (the evidence test of the registry would use the slow
+  program grid); `composed-gates.test.ts` holds the evidence against the reference instead.

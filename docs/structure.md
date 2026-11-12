@@ -3902,8 +3902,8 @@ it marked `inference` and the regions of the atoms' files marked with an atom's 
 records (`EpAtom`, `AtomProblem` as build, reference and presentation, `EpRun`, the checks), `ep-atoms.ts` the functions of an atom
 (`atomRun`, `atomReference`, `atomCheck`, `verifyAtom`, `atomVerdict`, densities; `atom.ep` is a typed `EpKnobs`), `_define.ts` `defineAtom`
 and `_tolerance.ts` the named tolerance and recovery rungs (both internal). The atoms are in `_atoms/{conjugate,priors,scales,likelihoods,
-ordinal,gates,weights,functions,kernels,covariance,nonparametric,counts}.ts`, one file per family with the basic and learned twins
-together, and the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`, `epAtomsOf`; the atoms are not exported one by one). The references
+ordinal,gates,weights,functions,kernels,covariance,nonparametric,counts,composed-gates}.ts`, one file per family with the basic and learned twins
+together (`composed-gates` holds setups that compose several pieces, on the pocs group `composed-atoms`), and the registry is `ep-atom-list.ts` (`epAtoms`, `epAtom`, `epAtomsOf`; the atoms are not exported one by one). The references
 are in `probprog/validation/references/` (`marginal`, `grid`, `grid3`, `conjugate`, `gate`, `clutter`, `sampler`, `special`), as a family
 of kernels that take a log density or a closed form as a callback; the shared helpers of the suite (`once`) are in the private `_util.ts`.
 `ep-extended.ts` is calibration and credible intervals of the learned atoms, `ep-recovery.ts` the recovery summaries (interval,

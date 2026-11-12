@@ -10,7 +10,7 @@ describe('the pages of the EP atoms', () => {
     '%s has a page in the group, titled as the atom',
     (name, title) => {
       const entry = POCS.find((p) => p.slug === `ep-${name}`)
-      expect(entry?.group).toBe('expectation-propagation')
+      expect(['expectation-propagation', 'composed-atoms']).toContain(entry?.group)
       expect(entry?.title).toBe(title)
       expect(pageOf(`ep-${name}`)).toBeDefined()
     },
