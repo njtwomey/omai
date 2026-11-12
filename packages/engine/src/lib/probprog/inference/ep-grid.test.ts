@@ -183,6 +183,22 @@ describe('epGridMethod on the Gaussian process benchmarks', () => {
     expect(post?.diagnostics['reason']).toMatch(/no node has an EP evidence/)
   })
 
+  it('counts the nodes that have no EP evidence, says so in the notes and is not "converged" while some node has none', () => {
+    const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
+    const run = session(method, { steps: 5, mode: 'eager', config: { points: 5 } })
+    const whole = method.posterior?.(run.state, run.config)
+    expect(whole?.status).toBe('converged')
+    expect(whole?.diagnostics['nodesWithoutEvidence']).toBeUndefined()
+    const holed = {
+      ...run.state,
+      nodes: run.state.nodes.map((n, i) => (i === 1 ? { ...n, logEvidence: Number.NEGATIVE_INFINITY } : n)),
+    }
+    const post = method.posterior?.(holed, run.config)
+    expect(post?.diagnostics['nodesWithoutEvidence']).toBe(1)
+    expect(String(post?.diagnostics['note'])).toMatch(/1 of 5 nodes have no EP evidence/)
+    expect(post?.status).toBe('completed')
+  })
+
   it('weighs only the nodes that settled when some did: a run that cycled does not carry an inflated evidence into the grid', () => {
     const method = epGridMethod(benchmarkModel('gaussian-process-regression').bound())
     const run = session(method, { steps: 5, mode: 'eager', config: { points: 5 } })
