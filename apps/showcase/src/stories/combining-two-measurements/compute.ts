@@ -8,9 +8,8 @@
  */
 
 // region imports
-import { modelRunFromTape } from 'omai-engine/exposition'
 import { epRoute } from 'omai-engine/probprog/inference'
-import { defineModel, toStructure } from 'omai-engine/probprog/model'
+import { defineModel } from 'omai-engine/probprog/model'
 import * as d from 'omai-engine/probprog/model/dists'
 import { foldIn, key, normal } from 'omai-engine/random'
 import { item } from 'omai-engine/tensor'
@@ -19,7 +18,7 @@ import { session } from 'omai-engine/trace'
 
 import type { ModelRun } from 'omai-engine/exposition'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { DIAL_SD, DIGITAL_SD, PRIOR, SOURCES } from './data.ts'
 
 /** A message one factor sent to the temperature in the first sweep: a bell curve, in the numbers EP keeps it by. */
@@ -120,9 +119,7 @@ export function combine(seed: number, say: Say = () => {}): Result {
   const tape = sweeps.run()
   const events: readonly MessageEvent[] = tape.events
   const first = events.filter((e) => e.type === 'message' && e.kind === 'mp/message' && e.step === 1)
-  const record = replayRecord(
-    modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: tape }, { maxMessages: 6 }),
-  )
+  const record = replayOfModel(bound, tape)
   const change = record.series.find((s) => s.name === 'change')
   return {
     truth,

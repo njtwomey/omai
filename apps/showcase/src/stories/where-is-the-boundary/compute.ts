@@ -72,8 +72,14 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   // a smooth function: points close together get similar scores, and the length scale says how close
   const smooth = scaleKernel(rbfKernel({ lengthScale: 1 }), 4)
   // a point's class is its score through a probit link, and the classifier is run by expectation propagation
-  const classifier = gpClassifier.with({ method: 'ep', likelihood: 'probit', kernel: smooth, optimise: true })
-  const run = classifier.session({ x: points.x.map((p) => [...p]), y: [...points.y] }, { key: key(seed), logs: 'all' })
+  const classifier = gpClassifier.with({
+    method: 'ep',
+    likelihood: 'probit',
+    kernel: smooth,
+    optimise: true,
+  })
+  const data = { x: points.x.map((p) => [...p]), y: [...points.y] }
+  const run = classifier.session(data, { key: key(seed), logs: 'all' })
   // run the site updates until none of them changes
   run.advance()
   const fitted = run.fittedAt(run.t)

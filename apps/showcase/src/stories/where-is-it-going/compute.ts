@@ -15,11 +15,10 @@ import * as d from 'omai-engine/probprog/model/dists'
 import { session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
-import { toStructure } from 'omai-engine/probprog/model'
+import type { ModelRun } from 'omai-engine/exposition'
 import { concat, full, tensor, zeros } from 'omai-engine/tensor'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOfModel } from '../../kit/replay.ts'
 import { AHEAD, DT, READING_SD, READINGS, START, simulate, stepCovariance } from './data.ts'
 
 /** A belief about the position at one step: its mean and the ends of a 90 percent interval. */
@@ -77,7 +76,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   const sees = tensor([1, 0])
   const tracker = defineModel('tracker', (m) => {
     const y = m.data('y', { dims: ['time'] })
-    // how far each reading can be from the position: a little for a real reading, a great deal for a step ahead
+    // how far each reading can be from the position: a little for a real reading,
+    // a great deal for a step ahead
     const noise = m.data('noise', { dims: ['time'] })
     const move = m.const(step)
     const position = m.const(sees)
@@ -97,7 +97,8 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
   })
   // endregion
   // region infer
-  // the readings, followed by steps that have none: a reading of zero that could be off by ten thousand says nothing
+  // the readings, followed by steps that have none:
+  // a reading of zero that could be off by ten thousand says nothing
   const readings = concat([tensor([...track.readings]), zeros([size.ahead])])
   const noise = concat([full([size.steps], READING_SD), full([size.ahead], 10000)])
   const bound = tracker.bind({ y: readings, noise })
@@ -126,9 +127,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     },
     sweeps: run.t,
     settled: run.status === 'converged',
-    record: size.record
-      ? replayRecord(modelRunFromTape(toStructure(bound, { view: 'factor' }), { run: run.run() }, { maxMessages: 6 }))
-      : undefined,
+    record: size.record ? replayOfModel(bound, run.run()) : undefined,
   }
 }
 

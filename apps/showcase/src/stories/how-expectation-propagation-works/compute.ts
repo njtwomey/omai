@@ -17,11 +17,11 @@ import { add, div, item, linspace, log, mul, square, sub, sum, take, tensor, toF
 import { metricSeries, session } from 'omai-engine/trace'
 // endregion
 
-import { type ModelRun, modelRunFromTape } from 'omai-engine/exposition'
+import type { ModelRun } from 'omai-engine/exposition'
 import { type EpPath, graphStructure, type MpState } from 'omai-engine/message-passing'
 import type { Config, Session } from 'omai-engine/trace'
 import type { Say } from '../../kit/protocol.ts'
-import { replayRecord } from '../../kit/replay.ts'
+import { replayOf } from '../../kit/replay.ts'
 import { CLUTTER_CHANCE, CLUTTER_SD, MAX_SWEEPS, ROWS, SHOWN_SWEEP, TOLERANCE } from './data.ts'
 
 /** A bell curve: its centre and its standard deviation, or `null` where the message has no bell (a flat or negative precision). */
@@ -38,7 +38,7 @@ export interface Message {
 
 /** One update of the run: a factor, the bell it was given (its cavity), the stand-in it sent and the approximation afterwards. */
 export interface Step {
-  /** 0 for the prior, 1 to 8 for the measurements. */
+  /** 0 for the prior, 1 to `rows` for the measurements. */
   readonly factor: number
   readonly cavity: Bell | null
   readonly standIn: Message
@@ -48,7 +48,7 @@ export interface Step {
 /** One update taken apart. All the curves are on one grid of values of the location. */
 export interface Taken {
   readonly sweep: number
-  /** The factor (1 to 8) and the measurement it holds. */
+  /** The factor (1 to `rows`) and the measurement it holds. */
   readonly factor: number
   readonly point: number
   /** The approximation just before the update, and this factor's own stand-in then. */
@@ -72,7 +72,7 @@ export interface Taken {
 /** What the figures and the prose read. All of it is plain data. */
 export interface Result {
   readonly rows: number
-  /** The eight values, which of them the generator made clutter, and the location it drew the others around. */
+  /** The `rows` values, which of them the generator made clutter, and the location it drew the others around. */
   readonly points: readonly number[]
   readonly clutter: readonly boolean[]
   readonly truth: number
@@ -107,7 +107,7 @@ export interface Result {
   }
 }
 
-/** How much to use: the run uses eight measurements. */
+/** How much to use: the run uses `ROWS` measurements. */
 export interface Size {
   readonly rows: number
 }
@@ -214,7 +214,7 @@ export function fit(seed: number, say: Say = () => {}, size: Size = DEFAULT_SIZE
     },
     standIns: shown.map((sweep) => ({ sweep, messages: messagesAt(sweep * factors).map(messageOf) })),
     taken,
-    record: replayRecord(modelRunFromTape(graphStructure(graph.spec), { run: run.run() }, { maxMessages: 6 })),
+    record: replayOf(graphStructure(graph.spec), run.run()),
     ep: final,
     logEvidence: evidence,
     exact: {

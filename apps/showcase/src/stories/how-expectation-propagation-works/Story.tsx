@@ -1,5 +1,5 @@
 import { type ModelRun, modelRunAt } from 'omai-engine/exposition'
-import type { ReactNode } from 'react'
+import { type ReactNode, useCallback } from 'react'
 import { Link } from '../../../../site/src/shell/Link.tsx'
 import { Code, Figure } from '../../kit/Blocks.tsx'
 import { MessageReplay } from '../../kit/MessageReplay.tsx'
@@ -294,6 +294,11 @@ export default function Story(): ReactNode {
 /** Everything that reads the result, from the first update to the closing pointers. */
 export function RunStory(props: { readonly result: Result }): ReactNode {
   const { result } = props
+  // the replay makes its words again when this function changes, so it is made once per result
+  const describe = useCallback(
+    (step: number, record: ModelRun): ReactNode => describeUpdate(step, record, result.points),
+    [result.points],
+  )
   const taken = result.taken
   const sweeps = readSweeps(result)
   const exact = readExact(result)
@@ -605,7 +610,7 @@ export function RunStory(props: { readonly result: Result }): ReactNode {
       <MessageReplay
         record={result.record}
         label="The updates of the run, one factor at a time"
-        describe={(step, record) => describeUpdate(step, record, result.points)}
+        describe={describe}
         caption="The factor graph of the run. The circle is the unknown location, x. The squares are the factors: the prior, then one clutter factor for each measurement, in order. The message on a line is the stand-in that factor sent at this step; the belief in the circle is the approximation. The replay keeps the first and last step and the steps where the belief moved most."
       />
 
