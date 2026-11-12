@@ -182,6 +182,12 @@ atom/random-intercepts-slopes vectorise: 31 variables, 31 factors, 0 issues; lin
 atom/random-intercepts-slopes expand: 31 variables, 31 factors, 0 issues; linear-regression-row x24 mvn-wishart x6 prior x1
 atom/random-intercepts-slopes-learned vectorise: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
 atom/random-intercepts-slopes-learned expand: 52 variables, 43 factors, 0 issues; linear-regression-row x40 mvn-wishart-group x1 prior x2
+atom/gp-softmax vectorise: 7 variables, 9 factors, 0 issues; dot-constant x6 multiclass-site x2 prior x1
+atom/gp-softmax expand: 7 variables, 9 factors, 0 issues; dot-constant x6 multiclass-site x2 prior x1
+atom/softmax-choice vectorise: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
+atom/softmax-choice expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
+atom/softmax-choice-learned vectorise: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
+atom/softmax-choice-learned expand: 99 variables, 111 factors, 0 issues; dot-constant x98 multiclass-site x12 prior x1
 model/beta-bernoulli vectorise: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/beta-bernoulli expand: 21 variables, 21 factors, 0 issues; bernoulli x20 prior x1
 model/normal-normal vectorise: 13 variables, 13 factors, 0 issues; gaussian x12 prior x1
