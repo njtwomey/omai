@@ -139,10 +139,9 @@ export function sizeOf(build: Build): Size {
 /**
  * The model of a choice: each eruption belongs to one group, and its length and wait fall
  * around that group's centre. A spread is written as a precision with a gamma prior, which is
- * the form expectation propagation reads. For the sampler the centres are also kept inside a
- * wide range (`boundedCentres`): its shortcut for a centre fails when spreads differ by group.
+ * the form expectation propagation reads.
  */
-export function mixtureModel(build: Build, boundedCentres: boolean): ReturnType<typeof defineModel> {
+export function mixtureModel(build: Build): ReturnType<typeof defineModel> {
   const pieces = piecesOf(build.groups)
   return defineModel(`mixture-${build.shape}-${build.groups}`, (m) => {
     const row = m.range('row')
@@ -160,15 +159,14 @@ export function mixtureModel(build: Build, boundedCentres: boolean): ReturnType<
       shares = m.latent('shares', d.dirichlet(full([pieces], 1)))
     }
     // centres in the length direction; for a fixed number of groups they are in order
-    const near = boundedCentres ? { constraint: { kind: 'interval' as const, low: -8, high: 8 } } : {}
-    const inOrder = isOpen(build.groups) ? near : { constraint: { kind: 'ordered' as const } }
+    const inOrder = isOpen(build.groups) ? {} : { constraint: { kind: 'ordered' as const } }
     const centreL = m.latent('centreL', d.normal(0, 1.5), { dims: [group], ...inOrder })
     const which = m.latent('which', d.categorical({ probs: shares }), { dims: [row] })
     if (build.shape === 'round') {
       // one spread, for both directions and every group
       const precision = m.latent('precision', d.gamma(2, 0.5))
       const sd = ops.div(1, ops.sqrt(precision))
-      const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group], ...near })
+      const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group] })
       m.observe('length', d.normal(centreL.at(which), sd), length)
       m.observe('wait', d.normal(centreW.at(which), sd), wait)
     } else if (build.shape === 'diagonal') {
@@ -177,7 +175,7 @@ export function mixtureModel(build: Build, boundedCentres: boolean): ReturnType<
       const precisionW = m.latent('precisionW', d.gamma(2, 0.5), { dims: [group] })
       const sdL = ops.div(1, ops.sqrt(precisionL.at(which)))
       const sdW = ops.div(1, ops.sqrt(precisionW.at(which)))
-      const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group], ...near })
+      const centreW = m.latent('centreW', d.normal(0, 1.5), { dims: [group] })
       m.observe('length', d.normal(centreL.at(which), sdL), length)
       m.observe('wait', d.normal(centreW.at(which), sdW), wait)
     } else {
@@ -285,7 +283,7 @@ export function fit(
   const order = argsort(uniform(foldIn(key(seed), 0), [size.rows]), 0)
   const length = take(div(sub(rawL, centreL), scaleL), order, 0)
   const wait = take(div(sub(rawW, centreW), scaleW), order, 0)
-  const model = mixtureModel(build, engine === 'gibbs' && build.shape !== 'round')
+  const model = mixtureModel(build)
   say(
     engine === 'ep'
       ? 'Passing messages between the eruptions and the groups'

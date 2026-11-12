@@ -313,6 +313,12 @@ Fixes (omai-render), from the notes site's 0.1.12 report:
 - `points` `symbolRotate` is a clockwise heading as documented (ECharts turns markers counterclockwise, so the angle is negated).
 - A real `Worker` is accepted as a `StageWorker` and a `WorkerLike` without a cast.
 
+Fixes (omai-engine, `probprog`), from the author of the Gaussian-mixtures showcase story:
+- Gibbs: the closed-form update of mixture components (`mu.at(z)`) failed with a shape error when the likelihood's known
+  spread was a value for each row (`sd.at(z)`, a spread for each group): the known parameter was taken for every row and not
+  for the group. It is now taken for the group; when it differs between the rows of one group the site is updated by slice
+  steps, which are correct, and not by a closed form.
+
 ## 0.1.12
 
 - `DraggableLine`: the label of a vertical line flips to the left of the line when it would run off the overlay (a line near the
