@@ -71,12 +71,27 @@ describe('networkLayerUnits', () => {
 })
 
 describe('networkLayerUnits and the latent coordinates of a feature model', () => {
-  it('does not take the features of a GPLVM for a layer: the units that read one coordinate multiply weights of their own', () => {
+  const gplvm = (packScalars: boolean): ReturnType<typeof compileGraph> => {
     const options = { features: 4, coords: 1, outputs: 3 }
     const { frequencies, phases } = fourierFeatures(key(0), options)
     const bound = gplvmFourierModel(options).bind({ omega: frequencies, phase: phases, y: normal(key(1), [5, 3]) })
-    const g = compileGraph(toFactorGraph(bound, { packScalars: true }).graph as never, factorOperators())
-    expect(g.factors.filter((f) => f.operator.name === 'apply').length).toBe(5 * 4)
+    return compileGraph(toFactorGraph(bound, { packScalars }).graph as never, factorOperators())
+  }
+  const count = (g: ReturnType<typeof compileGraph>, name: string): number =>
+    g.factors.filter((f) => f.operator.name === name).length
+
+  it('does not take the features of a GPLVM for a layer: the units that read one coordinate multiply weights of their own', () => {
+    // without packing the registry's scalar operators make the graph: a unit per feature and point
+    const g = gplvm(false)
+    expect(count(g, 'apply')).toBe(5 * 4)
+    expect(networkLayerUnits(g)).toBe(0)
+  })
+
+  it('does not take a packed GPLVM for a layer either: one gplvm-row factor per point, no unit left to count', () => {
+    // with packing (the default of EP) the compiler reads one coordinate per point as a gplvm-row factor
+    const g = gplvm(true)
+    expect(count(g, 'gplvm-row')).toBe(5)
+    expect(count(g, 'apply')).toBe(0)
     expect(networkLayerUnits(g)).toBe(0)
   })
 })
