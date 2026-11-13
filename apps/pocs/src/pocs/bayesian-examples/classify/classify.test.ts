@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { classifierObjective, classifierSteps } from '../../../examples/index.ts'
 import { classifierMethod } from './method.ts'
 
-const config = { ...(defaults(classifierMethod.config) as Config), rows: 60 }
+// The page's default time budget is 3 s, and a run that has used it is `stopped`, not `converged`. On a slow CI runner the default run
+// can take that long, so the test lifts the budget: what it checks is the run and its probes.
+const config = { ...(defaults(classifierMethod.config) as Config), rows: 60, budgetMs: 60_000 }
 
 describe('the classify page', () => {
   it('runs the default method on the main thread (the fallback) and its probes read the posterior', () => {
