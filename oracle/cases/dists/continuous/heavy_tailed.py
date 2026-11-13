@@ -39,8 +39,8 @@ def cases() -> list[Case]:
         skip=("logCdf", "logSf", "mean", "variance"),
     )
     out += distribution_cases("laplace", "laplace", [c_loc, c_scale], stats.laplace(c_loc, c_scale), x, q)
-    # The asymmetric Laplace of quantile regression: scipy's laplace_asymmetric(kappa, loc, s) with kappa = sqrt(tau / (1 - tau))
-    # and s = scale / sqrt(tau (1 - tau)).
+    # The asymmetric Laplace of quantile regression: scipy's laplace_asymmetric(kappa, loc, s)
+    # with kappa = sqrt(tau / (1 - tau)) and s = scale / sqrt(tau (1 - tau)).
     for i, tau in enumerate([0.2, 0.5, 0.85]):
         pl, ps, pt = np.array([0.5]), np.array([1.5]), np.array([tau])
         kappa = np.sqrt(pt / (1 - pt))
