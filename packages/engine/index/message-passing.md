@@ -131,7 +131,7 @@ The operators of discrete variables: the conjugate probability factors (Bernoull
 - structure `discreteDirichlet`: A discrete variable with a Dirichlet probability vector (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:122` `omai-engine/message-passing`
 - structure `gammaObserved`: An observed gamma or exponential value with a gamma rate (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:276` `omai-engine/message-passing`
 - structure `gaussianMixture`: A Gaussian mixture observation with normal-gamma components (variational). `src/lib/message-passing/operators/discrete/discrete.ts:388` `omai-engine/message-passing`
-- structure `mixtureWeight`: A two-component mixture likelihood with a beta weight: the switch summed out. `src/lib/message-passing/operators/discrete/conjugate.ts:375` `omai-engine/message-passing`
+- structure `mixtureWeight`: A two-component mixture likelihood with a beta weight: the switch summed out. `src/lib/message-passing/operators/discrete/conjugate.ts:376` `omai-engine/message-passing`
 - structure `negativeBinomialBeta`: An observed geometric or negative binomial count with a beta probability (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:324` `omai-engine/message-passing`
 - structure `poisson`: An observed Poisson count with a gamma rate (conjugate). `src/lib/message-passing/operators/discrete/conjugate.ts:193` `omai-engine/message-passing`
 - structure `select`: The gate y = c_z selecting one of several variables by a discrete index. `src/lib/message-passing/operators/discrete/discrete.ts:234` `omai-engine/message-passing`
@@ -195,7 +195,7 @@ The numeric likelihood operators: the generic numeric operator for any density, 
 - function `numericOperator`: An EP operator for any density over Gaussian variables, by quadrature. `src/lib/message-passing/operators/likelihoods/numeric.ts:90` `omai-engine/message-passing`
 - function `pairLikelihoodOperator`: A two-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/pairs.ts:292` `omai-engine/message-passing`
 - function `pairRowOperator`: A pair likelihood site on one Gaussian vector: a joint message for two coordinates that are linear forms of it. `src/lib/message-passing/operators/likelihoods/pairs.ts:422` `omai-engine/message-passing`
-- function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:387` `omai-engine/message-passing`
+- function `tripleLikelihoodOperator`: A three-variable numeric EP site from a registry of densities. `src/lib/message-passing/operators/likelihoods/triples.ts:388` `omai-engine/message-passing`
 
 - structure `apply`: The factor y = f(x) of a unary function of a Gaussian (exp, square, tanh, relu, softplus, abs, sigmoid). `src/lib/message-passing/operators/likelihoods/functions.ts:380` `omai-engine/message-passing`
 - structure `applyProductOperator`: The factor y = z f(x): a Gaussian times a function of a Gaussian or gamma variable (a non-centred scale). `src/lib/message-passing/operators/likelihoods/functions.ts:566` `omai-engine/message-passing`
@@ -222,7 +222,7 @@ The operators that link a Gaussian to an observation: truncation (probit, greate
 - structure `isBetween`: The interval test b = [lower < x < upper] of a Gaussian. `src/lib/message-passing/operators/links/truncation.ts:162` `omai-engine/message-passing`
 - structure `logistic`: The logistic link b | x ~ Bernoulli(sigmoid(x)): quadrature EP, Jaakkola bound VMP. `src/lib/message-passing/operators/links/links.ts:52` `omai-engine/message-passing`
 - structure `multiclassRow`: A categorical outcome with softmax or multinomial-probit probabilities of scores that are a matrix times a Gaussian vector. `src/lib/message-passing/operators/links/multiclass-row.ts:78` `omai-engine/message-passing`
-- structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/links/multiclass.ts:183` `omai-engine/message-passing`
+- structure `multiclassSite`: A categorical outcome with softmax or multinomial-probit probabilities of Gaussian class scores (adaptive Gauss-Hermite). `src/lib/message-passing/operators/links/multiclass.ts:184` `omai-engine/message-passing`
 - structure `probit`: The probit link b | x ~ Bernoulli(Phi(x)): exact EP site updates. `src/lib/message-passing/operators/links/truncation.ts:252` `omai-engine/message-passing`
 - structure `spin`: The spin factor x in {-1, +1} with a field, exact EP. `src/lib/message-passing/operators/links/spin.ts:37` `omai-engine/message-passing`
 
