@@ -218,7 +218,9 @@ describe('variational message passing on the non-centred Bayesian GAM', () => {
     expect(bayesianGamFormStarting('ard')['vmp']).toEqual({ damping: 0.5, maxSweeps: 60 })
   })
 
-  it('runs ARD under VMP with no knobs given to the curve of EP and a finite noise, where the undamped run collapses the noise', () => {
+  it('runs ARD under VMP with no knobs given to the curve of EP and a finite noise, where the undamped run does not reach it', {
+    timeout: 120_000,
+  }, () => {
     const model = bayesianGam(x, y, { k: 6, prior: 'ard' })
     const ep = fitOf('ep', model)
     // no config: the form's starting knobs are the method's defaults
@@ -228,8 +230,10 @@ describe('variational message passing on the non-centred Bayesian GAM', () => {
     const sd = model.standardisation.sd
     expect(Math.max(...fit.mean.map((m, i) => Math.abs(m - (ep.mean[i] ?? 0)) / sd))).toBeLessThan(0.1)
     expect(Math.abs(fit.hyper.logSigma[0] - ep.hyper.logSigma[0])).toBeLessThan(0.1)
-    // the same run with the damping taken off: the log noise runs off to its lower limit and the run stops
+    // The same run with the damping taken off does not settle on that noise. Where it goes depends on the last bits of exp and log
+    // (arm64 and x64 builds of V8 differ in them): the log noise ran off to -46 and the run stopped on macOS, and wandered to
+    // -0.8 and to +0.4 and +5 (100 sweeps, not converged) under a last-bit change of those functions, where EP has -1.65.
     const bare = fitOf('vmp', model, { damping: 0, maxSweeps: 100 })
-    expect(bare.hyper.logSigma[0]).toBeLessThan(-10)
+    expect(Math.abs(bare.hyper.logSigma[0] - ep.hyper.logSigma[0])).toBeGreaterThan(0.3)
   })
 })

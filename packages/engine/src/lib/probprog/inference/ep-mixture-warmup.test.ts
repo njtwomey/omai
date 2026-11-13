@@ -77,7 +77,10 @@ describe('EP on a two-cluster mixture with unknown weights, means and spread', (
     expect(Math.abs((free.mu[1] ?? 0) - (data.means[1] as number))).toBeLessThan(0.2)
   })
 
-  it('the multi-start method reports the clusters too, not the symmetric reading that has an evidence', () => {
+  // Four starts of EP on 150 rows: 10 s here, over 30 s on the CI runner.
+  it('the multi-start method reports the clusters too, not the symmetric reading that has an evidence', {
+    timeout: 120_000,
+  }, () => {
     const method = epMultiStartMethod(bound(true))
     const run = session(method, { steps: 4, mode: 'eager', config: { starts: 4, tol: 1e-6, maxSweeps: 200 } })
     const post = method.posterior?.(run.state, run.config)

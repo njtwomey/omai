@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { robustRegressionSteps } from '../../../examples/index.ts'
 import { robustRegressionMethod } from './method.ts'
 
-const config = { ...(defaults(robustRegressionMethod.config) as Config), rows: 25 }
+// The page's default time budget is 2 s, and a run that has used it is `stopped`, not `converged`. NUTS takes about that long here
+// (it took 2.07 s on the CI runner, and was stopped), so the test lifts the budget: what it checks is the run and its probes.
+const config = { ...(defaults(robustRegressionMethod.config) as Config), rows: 25, budgetMs: 60_000 }
 
 describe('the robust-regression page', () => {
   it('runs the default method on the main thread (the fallback) and its probes read the posterior', () => {

@@ -59,8 +59,9 @@ describe('kernelPlans', () => {
   // Random-walk Metropolis learns the shape of its proposal from the second half of the warm-up and keeps it: from the 200 draws
   // of a 400-step warm-up it failed the agreement on a three-dimensional logistic regression for seven seeds in eight (an effective
   // sample size of 5 to 100 in 3000 draws, and no better in 30000); with the warm-up of the plan it agrees.
+  // Three seeds of a 3000-draw run, each against the quadrature truth: 24 s here, and 60 s was not enough on the CI runner.
   it('agrees with the quadrature truth of the logistic regression with random-walk Metropolis for every seed tried', {
-    timeout: 60_000,
+    timeout: 240_000,
   }, () => {
     const model = {
       ...logisticRegression,

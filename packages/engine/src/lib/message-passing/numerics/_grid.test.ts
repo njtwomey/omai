@@ -1,16 +1,23 @@
-// The panelled grid: one algorithm for the two-coordinate and the up-to-three-coordinate integrals, its results bit for bit what
-// the two separate implementations it replaced gave (the hash below is that of their outputs on the battery), except the variance
-// of `integratePair`, which is centred now (the second pass of the weighted squares of the deviations) and so no longer the number
-// the difference of two second moments gave: it is left out of the hash and tested on its own.
+// The panelled grid: one algorithm for the two-coordinate and the up-to-three-coordinate integrals, its results what the two separate
+// implementations it replaced gave (the hash below is that of their outputs on the battery, each number rounded to eight decimals: the
+// bits of a float depend on the platform, see the battery), except the variance of `integratePair`, which is centred now (the second
+// pass of the weighted squares of the deviations) and so no longer the number the difference of two second moments gave: it is left
+// out of the hash and tested on its own.
 import { describe, expect, it } from 'vitest'
 import { ImproperMessageError, ParameterError } from '../core/errors.ts'
 import { betaAxis, gammaAxis, gaussianAxis, integrateAxes, integratePair, pointAxis } from './_grid.ts'
 
 // region battery
-/** The bits of every number of a result folded into one hash (FNV-1a over the two words of each double). */
+/**
+ * Every number of a result folded into one hash (FNV-1a over the two words of each double), each rounded to eight decimals first: Math.exp,
+ * Math.sin and Math.pow of V8 differ in the last bit between arm64 (macOS) and x64 (the CI runners) for about one input in ten, so the
+ * bits of a result are not the same on both, and a hash of the bits was the number of one machine. Rounded to 1e-8 the hash is the same
+ * under a last-bit change of every call of those functions (checked), and still changes when those results move by a part in a million.
+ */
 function fold(h: number, v: unknown, view: DataView): number {
   if (typeof v === 'number') {
-    view.setFloat64(0, v)
+    const rounded = Math.round(v * 1e8)
+    view.setFloat64(0, Object.is(rounded, -0) ? 0 : rounded)
     for (const o of [0, 4]) h = Math.imul(h ^ view.getUint32(o), 16777619)
     return h
   }
@@ -23,13 +30,13 @@ function fold(h: number, v: unknown, view: DataView): number {
   return h
 }
 
-/** A result of `integratePair` without its variance, which is no longer bit for bit what it was (see the header). */
+/** A result of `integratePair` without its variance, which is no longer what it was (see the header). */
 const withoutVariance = (r: unknown): unknown => {
   const { variance: _variance, ...rest } = r as { variance: unknown }
   return rest
 }
 
-/** A battery of integrals over gamma, Gaussian, beta and observed axes (with and without kinks), hashed bit for bit. */
+/** A battery of integrals over gamma, Gaussian, beta and observed axes (with and without kinks), hashed (see {@link fold}). */
 function battery(G: {
   readonly gammaAxis: (s: number, r: number, k?: readonly number[]) => never
   readonly gaussianAxis: (m: number, v: number, k?: readonly number[]) => never
@@ -79,9 +86,9 @@ function battery(G: {
 // endregion
 
 describe('the panelled grid', () => {
-  it('gives, bit for bit, the numbers the two grids it replaced gave on a battery of gamma, Gaussian, beta and observed axes', () => {
+  it('gives, to eight decimals, the numbers the two grids it replaced gave on a battery of gamma, Gaussian, beta and observed axes', () => {
     expect(battery({ gammaAxis, gaussianAxis, betaAxis, pointAxis, integratePair, integrateAxes } as never)).toBe(
-      2691435236,
+      1809488587,
     )
   })
 
