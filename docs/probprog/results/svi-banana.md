@@ -2,7 +2,7 @@
 
 Haario's banana: the variational methods (Pathfinder, sticking the landing, structured, flow and mixture guides, natural gradients) against the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 3, rows 5, scalePercent 100), 17.2 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 3, rows 5, scalePercent 100), 15.8 s.
 
 **Passed**: 0 method(s) agree with the analytic truth, 1 differ as expected; 2 reported
 

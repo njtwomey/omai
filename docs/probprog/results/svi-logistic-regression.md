@@ -2,7 +2,7 @@
 
 Bayesian logistic regression: the variational methods (Pathfinder, sticking the landing, structured, flow and mixture guides, natural gradients) against the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 12, scalePercent 100), 17.0 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 12, scalePercent 100), 15.8 s.
 
 **Passed**: 0 method(s) agree with the quadrature truth; 4 reported
 

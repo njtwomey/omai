@@ -2,7 +2,7 @@
 
 Normal-normal mean: the kernel methods against the exact truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 12, rows 12, scalePercent 100), 12.0 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 12, rows 12, scalePercent 100), 10.6 s.
 
 **Passed**: 9 kernel method(s) agree with the exact truth; 3 reported
 

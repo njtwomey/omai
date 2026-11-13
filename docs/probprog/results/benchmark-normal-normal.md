@@ -2,7 +2,7 @@
 
 Normal-normal mean: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 8, rows 8, scalePercent 100), 2.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 8, rows 8, scalePercent 100), 2.2 s.
 
 **Passed**: 7 method(s) agree with the exact truth; 1 reported
 

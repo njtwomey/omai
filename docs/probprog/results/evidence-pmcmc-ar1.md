@@ -2,7 +2,7 @@
 
 Particle marginal Metropolis-Hastings and particle Gibbs (with and without ancestor sampling) against the exact posterior of the AR(1) coefficient, from the Kalman filter's marginal likelihood on a grid.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (iterations 3000, chains 4), 31.1 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (iterations 3000, chains 4), 26.9 s.
 
 **Passed**: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent)
 

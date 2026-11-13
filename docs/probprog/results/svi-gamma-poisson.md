@@ -2,7 +2,7 @@
 
 Gamma-Poisson rate: the variational methods (Pathfinder, sticking the landing, structured, flow and mixture guides, natural gradients) against the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 3, rows 3, scalePercent 100), 0.4 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 3, rows 3, scalePercent 100), 0.4 s.
 
 **Passed**: 2 method(s) agree with the exact truth; 1 reported
 

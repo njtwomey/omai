@@ -2,7 +2,7 @@
 
 Bayesian neural network: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 20, scalePercent 100), 95.3 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 20, scalePercent 100), 80.2 s.
 
 **Passed**: 0 method(s) agree with the reference truth; 4 reported
 

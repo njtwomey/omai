@@ -2,7 +2,7 @@
 
 Gaussian hidden Markov model: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 67, scalePercent 100), 11.6 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 67, scalePercent 100), 10.3 s.
 
 **Passed**: 2 method(s) agree with the exact truth; 2 reported
 

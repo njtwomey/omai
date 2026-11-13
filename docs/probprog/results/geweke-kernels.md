@@ -2,7 +2,7 @@
 
 Geweke joint-distribution tests of the handler-layer kernels on the normal-normal program (a kernel that never rejects must fail).
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (iterations 6000), 0.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (iterations 6000), 0.6 s.
 
 **Passed**: both kernels pass
 

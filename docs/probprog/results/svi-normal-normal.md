@@ -2,7 +2,7 @@
 
 Normal-normal mean: the variational methods (Pathfinder, sticking the landing, structured, flow and mixture guides, natural gradients) against the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 6, rows 6, scalePercent 100), 1.9 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 6, rows 6, scalePercent 100), 1.8 s.
 
 **Passed**: 6 method(s) agree with the exact truth; 0 reported
 

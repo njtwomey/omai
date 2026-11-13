@@ -2,7 +2,7 @@
 
 The exact posterior with its spread scaled by 0.4, a too-confident guide: it must FAIL calibration.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (replications 100, ranks 19), 0.0 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (replications 100, ranks 19), 0.0 s.
 
 **Passed**: detected: the deliberately wrong method failed calibration
 

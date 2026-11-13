@@ -2,7 +2,7 @@
 
 Bayesian logistic regression: the kernel methods against the quadrature truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 44.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 13, rows 39, scalePercent 100), 40.3 s.
 
 **Passed**: 9 kernel method(s) agree with the quadrature truth; 4 reported
 

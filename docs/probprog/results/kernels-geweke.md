@@ -2,7 +2,7 @@
 
 Geweke joint-distribution tests of the kernels of the sampling library on a two-parameter Gaussian model: every adjusted kernel must pass, the unadjusted Langevin step at a large step size must fail.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (iterations 8000), 1.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (iterations 8000), 1.6 s.
 
 **Passed**: as expected: random walk: passes; MALA: passes; Barker: passes; HMC: passes; slice: passes; elliptical slice: passes; ULA without the Metropolis step (must fail): differs
 

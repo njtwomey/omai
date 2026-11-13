@@ -2,7 +2,7 @@
 
 SVI with a point-estimate (delta) guide: it must FAIL calibration (all its draws are one number).
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (replications 40, ranks 19), 0.2 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (replications 40, ranks 19), 0.2 s.
 
 **Passed**: detected: the deliberately wrong method failed calibration
 

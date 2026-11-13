@@ -2,7 +2,7 @@
 
 Nested sampling against the analytic evidence of a Gaussian likelihood under a Gaussian prior in 1, 2, 5 and 10 dimensions: the error against the stated error over seeds, and how often the stated error covers the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (seeds 12, dimensions 4), 31.6 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (seeds 12, dimensions 4), 29.2 s.
 
 **Passed**: the stated error covers the analytic evidence at its nominal rate in every dimension, with no bias beyond it
 

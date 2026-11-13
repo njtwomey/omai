@@ -2,7 +2,7 @@
 
 The equal two-mode target: parallel tempering over a random walk recovers the one-half weight of each mode in every chain; NUTS stays in one mode per chain.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (chains 4, drawsPerChain 2000), 5.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (chains 4, drawsPerChain 2000), 5.3 s.
 
 **Passed**: parallel tempering recovers the mode weights in every chain; every NUTS chain stays in one mode
 

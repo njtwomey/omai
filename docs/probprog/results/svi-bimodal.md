@@ -2,7 +2,7 @@
 
 Two Gaussian modes: the variational methods (Pathfinder, sticking the landing, structured, flow and mixture guides, natural gradients) against the truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 2, rows 3, scalePercent 100), 2.9 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 2, rows 3, scalePercent 100), 2.7 s.
 
 **Passed**: 1 method(s) agree with the analytic truth, 1 differ as expected; 0 reported
 

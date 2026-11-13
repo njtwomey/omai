@@ -2,7 +2,7 @@
 
 Eight schools, non-centred: the kernel methods against the reference truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 12, rows 120, scalePercent 100), 37.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 12, rows 120, scalePercent 100), 35.3 s.
 
 **Passed**: 4 kernel method(s) agree with the quadrature truth; 8 reported
 

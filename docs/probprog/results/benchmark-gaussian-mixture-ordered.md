@@ -2,7 +2,7 @@
 
 Gaussian mixture, ordered means: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 8, scalePercent 100), 8.6 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 8, scalePercent 100), 8.1 s.
 
 **Passed**: 2 method(s) agree with the quadrature truth; 2 reported
 

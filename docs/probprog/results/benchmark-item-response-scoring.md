@@ -2,7 +2,7 @@
 
 Item response theory (2PL scoring): the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 26.8 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 13.6 s.
 
 **Passed**: 2 method(s) agree with the quadrature truth; 3 reported
 

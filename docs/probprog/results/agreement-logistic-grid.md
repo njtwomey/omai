@@ -2,7 +2,7 @@
 
 Logistic regression with two coefficients: NUTS, the Laplace approximation and mean-field SVI against the grid posterior.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (draws 1000, gridPoints 121, gridEvaluations 22083), 3.3 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (draws 1000, gridPoints 121, gridEvaluations 22083), 3.1 s.
 
 **Passed**: NUTS agrees with the grid (log evidence -9.6273); Laplace and SVI are reported as they are
 

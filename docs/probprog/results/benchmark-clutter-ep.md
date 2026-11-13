@@ -2,7 +2,7 @@
 
 Minka's clutter problem: EP with numeric sites, the Laplace fit and the mean-field guide against the exact posterior.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (scalePercent 100), 5.5 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (scalePercent 100), 3.0 s.
 
 **Passed**: EP converges under every rule; the integrating rules land on the dominant mode
 

@@ -1,72 +1,72 @@
 # Validation results
 
-Written by `make probprog-validate` on 2026-11-12 at commit 2519305a (seed 0, budget scale 1). Each file is one campaign; a diff of these tables is a regression.
+Written by `make probprog-validate` on 2026-11-13 at commit 2cabaeb2 (seed 0, budget scale 1). Each file is one campaign; a diff of these tables is a regression.
 
 | campaign | verdict | seconds |
 | --- | --- | --- |
-| [sbc/nuts-conjugate](sbc-nuts-conjugate.md) | passed: calibrated over 100 replications | 3.1 |
-| [sbc/svi-normal-guide](sbc-svi-normal-guide.md) | passed: calibrated over 100 replications | 0.7 |
+| [sbc/nuts-conjugate](sbc-nuts-conjugate.md) | passed: calibrated over 100 replications | 2.4 |
+| [sbc/svi-normal-guide](sbc-svi-normal-guide.md) | passed: calibrated over 100 replications | 0.6 |
 | [sbc/wrong-guide-delta](sbc-wrong-guide-delta.md) | passed: detected: the deliberately wrong method failed calibration | 0.2 |
 | [sbc/wrong-guide-narrow](sbc-wrong-guide-narrow.md) | passed: detected: the deliberately wrong method failed calibration | 0.0 |
-| [sbc/nuts-hierarchical](sbc-nuts-hierarchical.md) | passed: calibrated over 40 replications | 31.6 |
-| [agreement/logistic-grid](agreement-logistic-grid.md) | passed: NUTS agrees with the grid (log evidence -9.6273); Laplace and SVI are reported as they are | 3.3 |
-| [funnel/non-centred](funnel-non-centred.md) | passed: the centred model diverges, the non-centred one does not | 4.8 |
-| [geweke/kernels](geweke-kernels.md) | passed: both kernels pass | 0.7 |
-| [benchmark/beta-bernoulli](benchmark-beta-bernoulli.md) | passed: 5 method(s) agree with the exact truth; 2 reported | 5.4 |
-| [benchmark/normal-normal](benchmark-normal-normal.md) | passed: 7 method(s) agree with the exact truth; 1 reported | 2.7 |
-| [benchmark/gamma-poisson](benchmark-gamma-poisson.md) | passed: 5 method(s) agree with the exact truth; 2 reported | 3.6 |
-| [benchmark/logistic-regression](benchmark-logistic-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 21.2 |
-| [benchmark/probit-regression](benchmark-probit-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 48.5 |
-| [benchmark/poisson-regression](benchmark-poisson-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 14.2 |
-| [benchmark/negative-binomial-regression](benchmark-negative-binomial-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 56.5 |
-| [benchmark/eight-schools-centred](benchmark-eight-schools-centred.md) | passed: 0 method(s) agree with the quadrature truth, 2 differ as expected; 2 reported | 30.5 |
-| [benchmark/eight-schools-non-centred](benchmark-eight-schools-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 6.7 |
-| [benchmark/gaussian-mixture-ordered](benchmark-gaussian-mixture-ordered.md) | passed: 2 method(s) agree with the quadrature truth; 2 reported | 8.6 |
-| [benchmark/gaussian-mixture](benchmark-gaussian-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 6.7 |
-| [benchmark/funnel-centred](benchmark-funnel-centred.md) | passed: 0 method(s) agree with the analytic truth, 2 differ as expected; 0 reported | 9.4 |
-| [benchmark/funnel-non-centred](benchmark-funnel-non-centred.md) | passed: 1 method(s) agree with the analytic truth; 1 reported | 2.7 |
-| [benchmark/banana](benchmark-banana.md) | passed: 0 method(s) agree with the analytic truth, 2 differ as expected; 1 reported | 2.3 |
+| [sbc/nuts-hierarchical](sbc-nuts-hierarchical.md) | passed: calibrated over 40 replications | 28.6 |
+| [agreement/logistic-grid](agreement-logistic-grid.md) | passed: NUTS agrees with the grid (log evidence -9.6273); Laplace and SVI are reported as they are | 3.1 |
+| [funnel/non-centred](funnel-non-centred.md) | passed: the centred model diverges, the non-centred one does not | 4.5 |
+| [geweke/kernels](geweke-kernels.md) | passed: both kernels pass | 0.6 |
+| [benchmark/beta-bernoulli](benchmark-beta-bernoulli.md) | passed: 5 method(s) agree with the exact truth; 2 reported | 4.1 |
+| [benchmark/normal-normal](benchmark-normal-normal.md) | passed: 7 method(s) agree with the exact truth; 1 reported | 2.2 |
+| [benchmark/gamma-poisson](benchmark-gamma-poisson.md) | passed: 5 method(s) agree with the exact truth; 2 reported | 3.2 |
+| [benchmark/logistic-regression](benchmark-logistic-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 19.4 |
+| [benchmark/probit-regression](benchmark-probit-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 34.9 |
+| [benchmark/poisson-regression](benchmark-poisson-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 10.7 |
+| [benchmark/negative-binomial-regression](benchmark-negative-binomial-regression.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 45.7 |
+| [benchmark/eight-schools-centred](benchmark-eight-schools-centred.md) | passed: 0 method(s) agree with the quadrature truth, 2 differ as expected; 2 reported | 25.4 |
+| [benchmark/eight-schools-non-centred](benchmark-eight-schools-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 6.4 |
+| [benchmark/gaussian-mixture-ordered](benchmark-gaussian-mixture-ordered.md) | passed: 2 method(s) agree with the quadrature truth; 2 reported | 8.1 |
+| [benchmark/gaussian-mixture](benchmark-gaussian-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 6.4 |
+| [benchmark/funnel-centred](benchmark-funnel-centred.md) | passed: 0 method(s) agree with the analytic truth, 2 differ as expected; 0 reported | 8.9 |
+| [benchmark/funnel-non-centred](benchmark-funnel-non-centred.md) | passed: 1 method(s) agree with the analytic truth; 1 reported | 2.6 |
+| [benchmark/banana](benchmark-banana.md) | passed: 0 method(s) agree with the analytic truth, 2 differ as expected; 1 reported | 2.2 |
 | [benchmark/bimodal](benchmark-bimodal.md) | passed: 1 method(s) agree with the analytic truth, 1 differ as expected; 1 reported | 3.1 |
-| [benchmark/radon](benchmark-radon.md) | passed: 1 method(s) agree with the quadrature truth, 1 differ as expected; 2 reported | 24.9 |
-| [benchmark/trueskill-three-players](benchmark-trueskill-three-players.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 29.9 |
-| [benchmark/ar1-state-space](benchmark-ar1-state-space.md) | passed: 3 method(s) agree with the exact truth; 2 reported | 13.9 |
-| [evidence/conjugate](evidence-conjugate.md) | passed: 15 asserted estimates within their stated error (plus slack) of the closed-form log evidence | 28.3 |
-| [evidence/harmonic-mean](evidence-harmonic-mean.md) | passed: refused by default; its error is more than three times bridge sampling's at every likelihood width | 0.3 |
-| [evidence/nested-gaussian](evidence-nested-gaussian.md) | passed: the stated error covers the analytic evidence at its nominal rate in every dimension, with no bias beyond it | 31.6 |
-| [evidence/particle-filter](evidence-particle-filter.md) | passed: every proposal unbiased on the natural scale; the guided proposal is less variable than the bootstrap | 1.5 |
-| [evidence/pmcmc-ar1](evidence-pmcmc-ar1.md) | passed: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent) | 31.1 |
+| [benchmark/radon](benchmark-radon.md) | passed: 1 method(s) agree with the quadrature truth, 1 differ as expected; 2 reported | 24.1 |
+| [benchmark/trueskill-three-players](benchmark-trueskill-three-players.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 27.9 |
+| [benchmark/ar1-state-space](benchmark-ar1-state-space.md) | passed: 3 method(s) agree with the exact truth; 2 reported | 12.2 |
+| [evidence/conjugate](evidence-conjugate.md) | passed: 15 asserted estimates within their stated error (plus slack) of the closed-form log evidence | 25.7 |
+| [evidence/harmonic-mean](evidence-harmonic-mean.md) | passed: refused by default; its error is more than three times bridge sampling's at every likelihood width | 0.2 |
+| [evidence/nested-gaussian](evidence-nested-gaussian.md) | passed: the stated error covers the analytic evidence at its nominal rate in every dimension, with no bias beyond it | 29.2 |
+| [evidence/particle-filter](evidence-particle-filter.md) | passed: every proposal unbiased on the natural scale; the guided proposal is less variable than the bootstrap | 1.4 |
+| [evidence/pmcmc-ar1](evidence-pmcmc-ar1.md) | passed: every chain reproduces the exact posterior mean (within four Monte Carlo standard errors) and spread (within 30 percent) | 26.9 |
 | [structure/benchmarks](structure-benchmarks.md) | passed: 27 models: every finding as expected | 0.0 |
-| [structure/collapse-efficiency](structure-collapse-efficiency.md) | passed: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences | 39.3 |
-| [svi/normal-normal](svi-normal-normal.md) | passed: 6 method(s) agree with the exact truth; 0 reported | 1.9 |
+| [structure/collapse-efficiency](structure-collapse-efficiency.md) | passed: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences | 36.5 |
+| [svi/normal-normal](svi-normal-normal.md) | passed: 6 method(s) agree with the exact truth; 0 reported | 1.8 |
 | [svi/gamma-poisson](svi-gamma-poisson.md) | passed: 2 method(s) agree with the exact truth; 1 reported | 0.4 |
-| [svi/logistic-regression](svi-logistic-regression.md) | passed: 0 method(s) agree with the quadrature truth; 4 reported | 17.0 |
-| [svi/banana](svi-banana.md) | passed: 0 method(s) agree with the analytic truth, 1 differ as expected; 2 reported | 17.2 |
-| [svi/bimodal](svi-bimodal.md) | passed: 1 method(s) agree with the analytic truth, 1 differ as expected; 0 reported | 2.9 |
-| [kernels/geweke](kernels-geweke.md) | passed: as expected: random walk: passes; MALA: passes; Barker: passes; HMC: passes; slice: passes; elliptical slice: passes; ULA without the Metropolis step (must fail): differs | 1.7 |
-| [kernels/sbc-rwm](kernels-sbc-rwm.md) | passed: calibrated over 100 replications | 1.3 |
+| [svi/logistic-regression](svi-logistic-regression.md) | passed: 0 method(s) agree with the quadrature truth; 4 reported | 15.8 |
+| [svi/banana](svi-banana.md) | passed: 0 method(s) agree with the analytic truth, 1 differ as expected; 2 reported | 15.8 |
+| [svi/bimodal](svi-bimodal.md) | passed: 1 method(s) agree with the analytic truth, 1 differ as expected; 0 reported | 2.7 |
+| [kernels/geweke](kernels-geweke.md) | passed: as expected: random walk: passes; MALA: passes; Barker: passes; HMC: passes; slice: passes; elliptical slice: passes; ULA without the Metropolis step (must fail): differs | 1.6 |
+| [kernels/sbc-rwm](kernels-sbc-rwm.md) | passed: calibrated over 100 replications | 1.2 |
 | [kernels/sbc-mala](kernels-sbc-mala.md) | passed: calibrated over 100 replications | 1.3 |
-| [kernels/sbc-barker](kernels-sbc-barker.md) | passed: calibrated over 100 replications | 1.5 |
-| [kernels/sbc-hmc](kernels-sbc-hmc.md) | passed: calibrated over 100 replications | 2.9 |
-| [kernels/sbc-slice](kernels-sbc-slice.md) | passed: calibrated over 100 replications | 0.8 |
-| [kernels/sbc-elliptical-slice](kernels-sbc-elliptical-slice.md) | passed: calibrated over 100 replications | 0.5 |
-| [kernels/sbc-aies](kernels-sbc-aies.md) | passed: calibrated over 100 replications | 2.5 |
-| [kernels/sbc-ensemble-slice](kernels-sbc-ensemble-slice.md) | passed: calibrated over 100 replications | 14.1 |
-| [kernels/sbc-parallel-tempering](kernels-sbc-parallel-tempering.md) | passed: calibrated over 100 replications | 12.5 |
-| [kernels/sbc-chees](kernels-sbc-chees.md) | passed: calibrated over 100 replications | 15.0 |
-| [kernels/sbc-mclmc](kernels-sbc-mclmc.md) | passed: calibrated over 100 replications | 2.9 |
-| [kernels/sbc-sgld](kernels-sbc-sgld.md) | passed: calibrated over 100 replications | 3.1 |
-| [kernels/sbc-hybrid](kernels-sbc-hybrid.md) | passed: calibrated over 100 replications | 3.8 |
-| [kernels/agreement-normal-normal](kernels-agreement-normal-normal.md) | passed: 9 kernel method(s) agree with the exact truth; 3 reported | 12.0 |
-| [kernels/agreement-logistic-regression](kernels-agreement-logistic-regression.md) | passed: 9 kernel method(s) agree with the quadrature truth; 4 reported | 44.7 |
-| [kernels/agreement-eight-schools-non-centred](kernels-agreement-eight-schools-non-centred.md) | passed: 4 kernel method(s) agree with the quadrature truth; 8 reported | 37.7 |
-| [kernels/bimodal](kernels-bimodal.md) | passed: parallel tempering recovers the mode weights in every chain; every NUTS chain stays in one mode | 5.7 |
-| [benchmark/stochastic-volatility](benchmark-stochastic-volatility.md) | passed: 1 method(s) agree with the quadrature truth; 4 reported | 65.4 |
-| [benchmark/gaussian-hmm](benchmark-gaussian-hmm.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 11.6 |
-| [benchmark/gaussian-process-regression](benchmark-gaussian-process-regression.md) | passed: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported | 65.1 |
-| [benchmark/gaussian-process-non-centred](benchmark-gaussian-process-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 17.6 |
-| [benchmark/lda-lite](benchmark-lda-lite.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 58.7 |
-| [benchmark/bayesian-neural-network](benchmark-bayesian-neural-network.md) | passed: 0 method(s) agree with the reference truth; 4 reported | 95.3 |
-| [benchmark/item-response-scoring](benchmark-item-response-scoring.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 26.8 |
-| [benchmark/stick-breaking-mixture](benchmark-stick-breaking-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 2 reported | 15.8 |
-| [benchmark/clutter-problem](benchmark-clutter-problem.md) | passed: 0 method(s) agree with the quadrature truth; 3 reported | 3.6 |
-| [benchmark/clutter-ep](benchmark-clutter-ep.md) | passed: EP converges under every rule; the integrating rules land on the dominant mode | 5.5 |
+| [kernels/sbc-barker](kernels-sbc-barker.md) | passed: calibrated over 100 replications | 1.4 |
+| [kernels/sbc-hmc](kernels-sbc-hmc.md) | passed: calibrated over 100 replications | 2.7 |
+| [kernels/sbc-slice](kernels-sbc-slice.md) | passed: calibrated over 100 replications | 0.7 |
+| [kernels/sbc-elliptical-slice](kernels-sbc-elliptical-slice.md) | passed: calibrated over 100 replications | 0.4 |
+| [kernels/sbc-aies](kernels-sbc-aies.md) | passed: calibrated over 100 replications | 2.3 |
+| [kernels/sbc-ensemble-slice](kernels-sbc-ensemble-slice.md) | passed: calibrated over 100 replications | 10.7 |
+| [kernels/sbc-parallel-tempering](kernels-sbc-parallel-tempering.md) | passed: calibrated over 100 replications | 8.7 |
+| [kernels/sbc-chees](kernels-sbc-chees.md) | passed: calibrated over 100 replications | 13.6 |
+| [kernels/sbc-mclmc](kernels-sbc-mclmc.md) | passed: calibrated over 100 replications | 2.8 |
+| [kernels/sbc-sgld](kernels-sbc-sgld.md) | passed: calibrated over 100 replications | 2.9 |
+| [kernels/sbc-hybrid](kernels-sbc-hybrid.md) | passed: calibrated over 100 replications | 3.5 |
+| [kernels/agreement-normal-normal](kernels-agreement-normal-normal.md) | passed: 9 kernel method(s) agree with the exact truth; 3 reported | 10.6 |
+| [kernels/agreement-logistic-regression](kernels-agreement-logistic-regression.md) | passed: 9 kernel method(s) agree with the quadrature truth; 4 reported | 40.3 |
+| [kernels/agreement-eight-schools-non-centred](kernels-agreement-eight-schools-non-centred.md) | passed: 4 kernel method(s) agree with the quadrature truth; 8 reported | 35.3 |
+| [kernels/bimodal](kernels-bimodal.md) | passed: parallel tempering recovers the mode weights in every chain; every NUTS chain stays in one mode | 5.3 |
+| [benchmark/stochastic-volatility](benchmark-stochastic-volatility.md) | passed: 1 method(s) agree with the quadrature truth; 4 reported | 59.5 |
+| [benchmark/gaussian-hmm](benchmark-gaussian-hmm.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 10.3 |
+| [benchmark/gaussian-process-regression](benchmark-gaussian-process-regression.md) | passed: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported | 46.4 |
+| [benchmark/gaussian-process-non-centred](benchmark-gaussian-process-non-centred.md) | passed: 1 method(s) agree with the quadrature truth; 3 reported | 16.2 |
+| [benchmark/lda-lite](benchmark-lda-lite.md) | passed: 2 method(s) agree with the exact truth; 2 reported | 54.1 |
+| [benchmark/bayesian-neural-network](benchmark-bayesian-neural-network.md) | passed: 0 method(s) agree with the reference truth; 4 reported | 80.2 |
+| [benchmark/item-response-scoring](benchmark-item-response-scoring.md) | passed: 2 method(s) agree with the quadrature truth; 3 reported | 13.6 |
+| [benchmark/stick-breaking-mixture](benchmark-stick-breaking-mixture.md) | passed: 1 method(s) agree with the quadrature truth; 2 reported | 7.0 |
+| [benchmark/clutter-problem](benchmark-clutter-problem.md) | passed: 0 method(s) agree with the quadrature truth; 3 reported | 2.9 |
+| [benchmark/clutter-ep](benchmark-clutter-ep.md) | passed: EP converges under every rule; the integrating rules land on the dominant mode | 3.0 |

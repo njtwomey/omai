@@ -2,7 +2,7 @@
 
 NUTS on the normal-normal program: ranks of the true mean among 19 draws (190 thinned by 10) must be uniform.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (replications 100, ranks 19), 3.1 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (replications 100, ranks 19), 2.4 s.
 
 **Passed**: calibrated over 100 replications
 

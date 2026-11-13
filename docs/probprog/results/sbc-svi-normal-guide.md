@@ -2,7 +2,7 @@
 
 SVI with the mean-field normal guide on a Gaussian posterior, where the guide family is exact.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (replications 100, ranks 19), 0.7 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (replications 100, ranks 19), 0.6 s.
 
 **Passed**: calibrated over 100 replications
 

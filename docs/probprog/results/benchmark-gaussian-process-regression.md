@@ -2,7 +2,7 @@
 
 Gaussian process regression: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 52, scalePercent 100), 65.1 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 52, scalePercent 100), 46.4 s.
 
 **Passed**: 0 method(s) agree with the quadrature truth, 1 differ as expected; 3 reported
 

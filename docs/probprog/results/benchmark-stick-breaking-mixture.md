@@ -2,7 +2,7 @@
 
 Stick-breaking mixture (truncated Dirichlet process): the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 3, rows 13, scalePercent 100), 15.8 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 3, rows 13, scalePercent 100), 7.0 s.
 
 **Passed**: 1 method(s) agree with the quadrature truth; 2 reported
 

@@ -2,7 +2,7 @@
 
 Eight schools, centred: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 4, rows 40, scalePercent 100), 30.5 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 4, rows 40, scalePercent 100), 25.4 s.
 
 **Passed**: 0 method(s) agree with the quadrature truth, 2 differ as expected; 2 reported
 

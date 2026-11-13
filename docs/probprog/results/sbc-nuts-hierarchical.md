@@ -2,7 +2,7 @@
 
 NUTS on a four-group hierarchical model, non-centred by `reparam`: calibration of mu, tau and the first group effect.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (replications 40, ranks 19, warmup 200, draws 380), 31.6 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (replications 40, ranks 19, warmup 200, draws 380), 28.6 s.
 
 **Passed**: calibrated over 40 replications
 

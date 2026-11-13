@@ -2,7 +2,7 @@
 
 NUTS on eight schools with the group effects integrated out by collapse, against the full model.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (chains 4, warmup 500, draws 1000), 39.3 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (chains 4, warmup 500, draws 1000), 36.5 s.
 
 **Passed**: collapsed NUTS gets 42 times the ESS of tau per gradient evaluation of the full centred model, with no divergences
 

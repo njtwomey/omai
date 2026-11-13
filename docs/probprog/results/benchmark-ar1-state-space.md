@@ -2,7 +2,7 @@
 
 AR(1) state space: the planned inference methods against the exact, quadrature or analytic truth.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 13.9 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (plans 5, rows 60, scalePercent 100), 12.2 s.
 
 **Passed**: 3 method(s) agree with the exact truth; 2 reported
 

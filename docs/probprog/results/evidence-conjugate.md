@@ -2,7 +2,7 @@
 
 Every evidence estimator on the three conjugate benchmark models against their closed-form log evidence: each must be within four of its own standard errors plus a slack for the bias the error does not state.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (models 3, estimators 6, scalePercent 100), 28.3 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (models 3, estimators 6, scalePercent 100), 25.7 s.
 
 **Passed**: 15 asserted estimates within their stated error (plus slack) of the closed-form log evidence
 

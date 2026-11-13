@@ -2,7 +2,7 @@
 
 The structure report of every benchmark model against the findings written down for it.
 
-Run on 2026-11-12 at commit 2519305a; seed 0, budget scale 1 (models 27), 0.0 s.
+Run on 2026-11-13 at commit 2cabaeb2; seed 0, budget scale 1 (models 27), 0.0 s.
 
 **Passed**: 27 models: every finding as expected
 
