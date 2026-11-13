@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { generate } from '../data/index.ts'
 import { key } from '../random/index.ts'
 import { tensor, toFlat } from '../tensor/index.ts'
-import { glmCurve } from './glm-curves.ts'
+import { glmCurve, zeroInflatedCounts } from './glm-curves.ts'
 
 /** The mean of y / mu and the Pearson dispersion mean((y - mu)^2 / V(mu)) for a variance function V. */
 function moments(family: string, knobs: Record<string, number | string>, variance: (mu: number) => number) {
@@ -62,5 +62,47 @@ describe('glmCurve', () => {
     const expected =
       t.xs.reduce((s, x) => s + Math.exp(-(Math.exp(0.8 * x) ** (2 - pw)) / (phi * (2 - pw))), 0) / t.xs.length
     expect(Math.abs(zeros - expected)).toBeLessThan(0.02)
+  })
+})
+
+describe('zeroInflatedCounts', () => {
+  const draw = (knobs: Record<string, number>) => {
+    const { data, truth } = generate(zeroInflatedCounts, { key: key(3), knobs: { n: 20_000, ...knobs } })
+    return {
+      x: toFlat(data.x),
+      y: toFlat(data.y),
+      structural: toFlat(truth.latents?.['structural'] as never),
+      rate: toFlat(truth.latents?.['rate'] as never),
+      truth,
+      data,
+    }
+  }
+
+  it('makes every structural zero a zero count, in about the stated share of the rows', () => {
+    const d = draw({ inflation: 0.3 })
+    expect(d.x.every((x) => x >= -1.5 && x <= 1.5)).toBe(true)
+    expect(d.y.every((y) => Number.isInteger(y) && y >= 0)).toBe(true)
+    expect(d.structural.every((s, i) => s === 0 || d.y[i] === 0)).toBe(true)
+    expect(d.structural.reduce((a, b) => a + b, 0) / d.y.length).toBeCloseTo(0.3, 1)
+  })
+
+  it('draws the other rows Poisson at the rate exp(intercept + slope x), zeros included', () => {
+    const d = draw({ inflation: 0.3, intercept: 0.5, slope: -0.4 })
+    const open = d.y.map((y, i) => [y, d.rate[i] ?? 0] as const).filter((_, i) => d.structural[i] === 0)
+    expect(d.rate[0]).toBeCloseTo(Math.exp(0.5 - 0.4 * (d.x[0] ?? 0)), 12)
+    const meanRatio = open.reduce((s, [y, r]) => s + y / r, 0) / open.length
+    expect(meanRatio).toBeCloseTo(1, 1)
+    const zeros = open.filter(([y]) => y === 0).length / open.length
+    const expected = open.reduce((s, [, r]) => s + Math.exp(-r), 0) / open.length
+    expect(Math.abs(zeros - expected)).toBeLessThan(0.02)
+  })
+
+  it('has the mean count (1 - inflation) rate as its regression function, and no structural zeros at zero inflation', () => {
+    const d = draw({ inflation: 0, intercept: 0.2, slope: 0.3 })
+    const f = toFlat(d.truth.regressionFunction?.(tensor([[0], [1]])) ?? tensor([]))
+    expect(f[1]).toBeCloseTo(Math.exp(0.5), 12)
+    expect(d.structural.every((s) => s === 0)).toBe(true)
+    const half = draw({ inflation: 0.5, intercept: 0.2, slope: 0.3 })
+    expect(toFlat(half.truth.regressionFunction?.(tensor([[0]])) ?? tensor([]))[0]).toBeCloseTo(0.5 * Math.exp(0.2), 12)
   })
 })

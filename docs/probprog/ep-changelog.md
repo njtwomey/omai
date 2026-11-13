@@ -1630,3 +1630,11 @@ The second full EP check had seven failures, all new since the first, all from m
   GPLVM with `packScalars: true`; since `7604d29e` that graph has five `gplvm-row` factors and no `apply`, so the premise of the count changed and `networkLayerUnits` is still 0 (the code is right:
   a GPLVM is not mistaken for a layer in either route). The test now checks both routes: unpacked (the registry's `apply`, `product`, `sum`: 20 `apply`, 0 layer units) and packed (5
   `gplvm-row`, 0 `apply`, 0 layer units).
+
+## 2026-11-12 The hand-written EP documents brought up to date (`agent-afa81a-docspass`)
+
+Documents only; no source, test, pocs page or digest changed. `ep.md` now describes the code as built: the compiler is `factors.ts` as the driver and `model/factor-graph/` (passes, mapping
+tables, refusal codes, the fusion pass), the engine and the operators are in folders, the restart rule, the numerics layer, the evidence (natural parameters, the unused `improperTarget` trait and why the plates
+returned to rows-expanded evidence), the network-layer verdict, the grid's `nodesWithoutEvidence`, `gplvm-row` with its limits, the pocs tree and the showcase; the "target" markers of the three reviews are gone, and
+section 6 lists the open gaps of `ep-gaps.ts`, by id. `ep-plan.md` has a step list with status and a status line on each item of its catalogue. `ep-priors.md`, `ep-and-gam.md`, `inventory.md`, `survey.md` and
+`verification.md` were corrected where they said something about EP that is no longer true (the variational softmax beyond six classes, the Wishart dimension, no message passing on programs, moved file and test paths).

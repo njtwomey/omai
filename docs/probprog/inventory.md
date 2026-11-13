@@ -5,6 +5,8 @@ read in the worktree at the commit after the CRF estimator (`e420394f`, package 
 re-checked on 2026-11-10 against `779e263f` (the same probprog source): the engine bodies, the tests, the timings and the
 catalogue are audited in [verification.md](verification.md), and the corrections are marked "(verified)" below.
 Line counts are of the source file without its tests. "Quality" is a judgement of the code as read, not of a test run.
+The file is a record of that commit: what is said about message passing on programs (section 4 and gap 7) was true then and is not
+now (see gap 7); the expectation propagation work since is described in [`ep.md`](ep.md) and [`ep-status.md`](ep-status.md).
 
 ## 1. What was read
 
@@ -197,8 +199,11 @@ set of problems, each grounded above:
 6. **Whole-program applicability.** Conjugate, Gaussian, chain and enumeration engines apply only when the whole program matches;
    a model with one non-conjugate site falls through to a generic sampler and loses the exactness of the rest. There is no partial
    (structural) use of structure: no collapse, no Rao-Blackwellisation, no blocks.
-7. **No message passing on programs.** EP, VMP and BP exist for discrete tables and for Gaussian-latent models on `pgm` model types;
-   a program with a Gamma precision, a Dirichlet, a probit or truncated factor cannot be given to them.
+7. **No message passing on programs** (true when this was read; built since). EP, VMP and BP existed for discrete tables and for
+   Gaussian-latent models on `pgm` model types, and a program with a Gamma precision, a Dirichlet, a probit or truncated factor could not
+   be given to them. Now a model written as a spec is compiled to a factor graph of exponential-family messages and run by one engine
+   (`lib/message-passing`, `probprog/model/factor-graph/`, `probprog/inference/`): see [`ep.md`](ep.md), and [`ep-status.md`](ep-status.md)
+   for what runs and what is refused.
 8. **Kernels are not reachable.** The ten kernels of `sampling/` do not run on programs (only NUTS and HMC do).
 9. **Coarse tapes.** The MCMC driver is one step; the others log an ELBO or a count per step. A session cannot pause, show chains
    filling in, or cancel inside a run for NUTS.

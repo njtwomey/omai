@@ -14,6 +14,11 @@ Every item carries how it was checked:
 | [R] | run (command given)                                                                       |
 | [M] | memory only: should be rare now; each one is listed in section 9 as unverified            |
 
+Status, 2026-11-12: this is the audit of 2026-11-10 and is kept as written. Its statements about expectation propagation and message
+passing describe the library at that commit (section 6.2 is about the `pgm` code, which still exists and is still reused). The general
+exponential-family engine that row 18 of section 9 calls new work has been built since: [`ep.md`](ep.md) is its design and
+[`ep-status.md`](ep-status.md) says what runs.
+
 Contents: 1 results of running things; 2 the engines read for real; 3 reparameterised sampling; 4 the methods catalogue;
 5 inventory claims re-checked; 6 facts the first lanes depend on; 7 installed packages; 8 online checks; 9 corrections made;
 10 what is still unverified.

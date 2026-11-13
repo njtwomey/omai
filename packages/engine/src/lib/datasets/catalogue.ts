@@ -48,7 +48,7 @@ import { densitySamples } from './densities.ts'
 import { hawkesProcess, inhomogeneousPoisson, poissonProcess, spatialPoisson } from './events.ts'
 import { abTest, carryoverExperiment, networkExperiment } from './experiments.ts'
 import { biasedCredit, germanCredit, titanicSurvival } from './fairness.ts'
-import { glmCurve } from './glm-curves.ts'
+import { glmCurve, zeroInflatedCounts } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { hyphenationWords } from './hyphenation.ts'
@@ -72,7 +72,14 @@ import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { gaussianGraph } from './precision-graphs.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
 import { pulseTrain } from './pulse-trains.ts'
-import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
+import {
+  clickLogs,
+  implicitFeedback,
+  lowRankRatings,
+  movielensSmall,
+  ordinalRatings,
+  zipfianCatalogue,
+} from './ranking.ts'
 import {
   type DatasetEntry,
   type DatasetModality,
@@ -201,6 +208,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   gaussianQuantiles,
   geometricScenes,
   glmCurve,
+  zeroInflatedCounts,
   graphFamilies,
   gaussianGraph,
   growthCurves,
@@ -224,6 +232,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   linkageTables,
   loggedBandit,
   lowRankRatings,
+  ordinalRatings,
   makeClassification,
   makeMultilabelClassification,
   makeRegression,
@@ -370,6 +379,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['friedman3', 'Friedman 3'],
     ['gaussianQuantiles', 'Gaussian quantiles'],
     ['glmCurve', 'GLM curve (counts and positive responses)'],
+    ['zeroInflatedCounts', 'Counts with structural zeros (zero-inflated Poisson)'],
     ['gaussianGraph', 'Gaussian graphical model (a known sparse precision)'],
     ['growthCurves', 'Growth curves (CDC charts)'],
     ['hastie10_2', 'Hastie 10.2'],
@@ -489,6 +499,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['eloGames', 'Games between rated players'],
     ['implicitFeedback', 'Implicit feedback'],
     ['lowRankRatings', 'Low-rank ratings'],
+    ['ordinalRatings', 'Ordinal ratings (ordered probit)'],
     ['roundRobin', 'Round-robin tournament'],
     ['zipfianCatalogue', 'Zipfian catalogue'],
   ]),

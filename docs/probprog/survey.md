@@ -81,8 +81,9 @@ everywhere; WebGPU is f32-only and not considered for gradient-based exact infer
    (compose per-variable methods), Gen.jl (trace operations as a user toolkit) and Pyro (handlers and guides as programs).
 3. The systems people call "natural" for model definition are PyMC (named dims and data containers), Stan (blocks and
    constraints), and Infer.NET (ranges and gates): all three have a declarative, inspectable model value.
-4. The one family omai has only in special cases is message passing on arbitrary exponential-family factor graphs
-   (Infer.NET's core). It has discrete BP, Gaussian BP, discrete and Gaussian-latent EP, and discrete VMP, TRW and mean field.
+4. The one family omai had only in special cases when this was written is message passing on arbitrary exponential-family factor
+   graphs (Infer.NET's core). It had discrete BP, Gaussian BP, discrete and Gaussian-latent EP, and discrete VMP, TRW and mean field.
+   Since then a model written as a spec is compiled to such a factor graph and run by EP, VMP or BP (`ep.md`, `ep-status.md`).
 5. The structural idea with the most leverage across all of them is automatic exact marginalisation of the conjugate and
    linear-Gaussian parts (Birch delayed sampling, JAGS conjugate samplers, Pyro `collapse`, Infer.NET message operators),
    combined with a sampler or optimiser for the rest.

@@ -16,7 +16,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 
 - structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
-- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:349` `omai-engine/datasets`
+- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:358` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
 - dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`
@@ -34,6 +34,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `makeRegression`: Linear regression problem, like sklearn make_regression. `src/lib/datasets/regression.ts:305` `omai-engine/datasets`
 - dataset `moons`: Two interleaving half circles. `src/lib/datasets/classification.ts:323` `omai-engine/datasets`
 - dataset `multiViewImages`: Posed multi-view images of a small scene, with held-out views. `src/lib/datasets/multiview.ts:240` `omai-engine/datasets`
+- dataset `ordinalRatings`: Ratings from 1 to 5 of items by raters, with ordered probit truth. `src/lib/datasets/ranking.ts:178` `omai-engine/datasets`
 - dataset `pinwheelDensity`: Pinwheel of swirled elongated Gaussians. `src/lib/datasets/densities.ts:243` `omai-engine/datasets`
 - dataset `ringDensity`: Concentric rings with exact log density and sampler. `src/lib/datasets/densities.ts:89` `omai-engine/datasets`
 - dataset `shapes`: Images of circles, squares and triangles with labels. `src/lib/datasets/images.ts:64` `omai-engine/datasets`
@@ -43,3 +44,4 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `spirals`: Interleaved spiral arms. `src/lib/datasets/classification.ts:460` `omai-engine/datasets`
 - dataset `swissRoll`: The Swiss roll in 3-D (sklearn make_swiss_roll), optionally with a hole. `src/lib/datasets/manifolds.ts:123` `omai-engine/datasets`
 - dataset `xor`: The XOR problem as four Gaussian blobs. `src/lib/datasets/classification.ts:393` `omai-engine/datasets`
+- dataset `zeroInflatedCounts`: Zero-inflated Poisson counts; the truth keeps each row's switch. `src/lib/datasets/glm-curves.ts:153` `omai-engine/datasets`

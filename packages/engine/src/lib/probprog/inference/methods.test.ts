@@ -7,7 +7,7 @@ import { expectCancelAndContinue, expectResumeEqual, expectSnapshotCadence } fro
 import { DISCRETE, MODELS, Y4 } from '../../../testing/probprog.ts'
 import { categorical, normal } from '../../dists/index.ts'
 import { key } from '../../random/index.ts'
-import { item, type Tensor, take, toArray, type Value } from '../../tensor/index.ts'
+import { item, type Tensor, take, toArray, toFlat, type Value } from '../../tensor/index.ts'
 import { type Config, Log, session } from '../../trace/index.ts'
 import { chainInference } from '../engines/chain.ts'
 import { conjugateInference } from '../engines/conjugate.ts'
@@ -286,6 +286,25 @@ describe('every iterative method is resumable, snapshots on the clock and cancel
       expectResumeEqual(method as InferenceMethod<unknown, Config, string, ModelAnalysis>, { config, steps, at })
     })
   }
+
+  it('abc-smc and particle-filter load a state saved with typed arrays, before the weights were tensors', () => {
+    const legacy = (t: Tensor): Float64Array => Float64Array.from(toFlat(t))
+    const abc = abcSmcMethod(normalMean)
+    const open = session(abc, { config: { numParticles: 40 }, steps: 2, seed: 2, mode: 'eager' })
+    const saved = open.state.smc
+    const older = { ...open.state, smc: { ...saved, particles: legacy(saved.particles) as never } }
+    const abcAlgorithm = abc.make(open.config, key(0))
+    const abcBack = abcAlgorithm.deserialise?.(JSON.parse(JSON.stringify(abcAlgorithm.serialise?.(older as never))))
+    expect(toFlat(abcBack?.smc.particles as Tensor)).toEqual(toFlat(saved.particles))
+    const filter = particleFilterMethod(walk as never)
+    const ran = session(filter, { config: { numParticles: 40 }, steps: 2, seed: 2, mode: 'eager' })
+    const filterAlgorithm = filter.make(ran.config, key(0))
+    const weights = legacy(ran.state.logWeights) as never
+    const filterBack = filterAlgorithm.deserialise?.(
+      JSON.parse(JSON.stringify(filterAlgorithm.serialise?.({ ...ran.state, logWeights: weights }))),
+    )
+    expect(toFlat(filterBack?.logWeights as Tensor)).toEqual(toFlat(ran.state.logWeights))
+  })
 
   it('snapshots once per second of clock time, each a posterior that reads, and stops at a time budget', () => {
     for (const [name, method, config, steps] of small) {
