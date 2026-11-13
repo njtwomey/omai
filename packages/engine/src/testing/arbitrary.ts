@@ -26,18 +26,25 @@ export function awayFromZero(shape: readonly number[], gap = 0.1, hi = 2): fc.Ar
 }
 
 /**
- * Values in `[lo, hi]` made pairwise distinct (a 0.1 step per element is added), for functions that are only
- * subdifferentiable at ties (max, min, sort, top-k) or at zero spread (standard deviation).
+ * Values in `[lo, hi]` made pairwise distinct (a 0.1 step per element is added, then any two values closer than `DISTINCT_GAP`
+ * are pushed apart), for functions that are only subdifferentiable at ties (max, min, sort, top-k, the infinity norm) or at zero
+ * spread (standard deviation). The gap keeps a finite-difference step from straddling a near tie: two values 9e-4 apart made the
+ * check of the infinity norm fail on CI on 2026-11-13.
  */
 export function distinctTensor(shape: readonly number[], lo = -2, hi = 2): fc.Arbitrary<Tensor<'float64'>> {
-  return tensorOf(shape, lo, hi).map((t) =>
-    fromStorage(
-      Float64Array.from(t.data, (v, i) => v + 0.1 * i),
-      t.shape,
-      'float64',
-    ),
-  )
+  return tensorOf(shape, lo, hi).map((t) => {
+    const data = Float64Array.from(t.data, (v, i) => v + 0.1 * i)
+    const order = Array.from(data.keys()).sort((a, b) => (data[a] ?? 0) - (data[b] ?? 0))
+    for (let k = 1; k < order.length; k++) {
+      const previous = data[order[k - 1] as number] ?? 0
+      if ((data[order[k] as number] ?? 0) - previous < DISTINCT_GAP) data[order[k] as number] = previous + DISTINCT_GAP
+    }
+    return fromStorage(data, t.shape, 'float64')
+  })
 }
+
+/** The least distance between two values of `distinctTensor`. */
+const DISTINCT_GAP = 0.05
 
 /** Shapes used for elementwise checks. */
 export const unaryShapes: readonly (readonly number[])[] = [[], [4], [2, 3]]
