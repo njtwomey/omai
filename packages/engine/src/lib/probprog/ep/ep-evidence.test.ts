@@ -89,7 +89,10 @@ describe('the EP evidence of the learned logistic regression (the weights share 
     return method.posterior?.(s.state, s.config as never)
   }
 
-  it('reports the evidence of the rows-expanded model when the plated factor has an improper cavity, and says so', () => {
+  // Each of the two runs EP on the rows-expanded model and a grid over three coordinates: 16 s here, 37 s on the CI runner.
+  it('reports the evidence of the rows-expanded model when the plated factor has an improper cavity, and says so', {
+    timeout: 120_000,
+  }, () => {
     // The scale mixture on the weights sends a site with a negative precision, so the cavity of the plate (all rows, one factor)
     // is indefinite and its integral against the logistic likelihood diverges: the plate has no EP energy of its own. The method
     // gives the energy of the same model with a factor per row, whose cavities are proper, and names it.
@@ -100,7 +103,9 @@ describe('the EP evidence of the learned logistic regression (the weights share 
     expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
   })
 
-  it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', () => {
+  it('has the evidence with a factor per row (a proper cavity for each), within 0.1 nats of the grid (0.046 measured)', {
+    timeout: 120_000,
+  }, () => {
     const post = posteriorOf('expand')
     expect(post?.diagnostics['evidenceUndefinedAt']).toBeUndefined()
     const grid = gridPosterior(toProgram(bound), undefined, { maxRefinements: 0, ...problem.grid })

@@ -240,7 +240,10 @@ describe('epGridMethod on an ARD kernel: a plated vector of length scales beside
     expect(sd / f.sd).toBeLessThan(1.03)
   })
 
-  it('four axes (two length scales, the variance and the noise sd) on a coarser lattice: the evidence and the spreads against the brute-force grid', () => {
+  // The brute-force reference on 21 points per axis and EP over 11 points per axis (14641 nodes as a product): 20 s here, over 30 s on the CI runner.
+  it('four axes (two length scales, the variance and the noise sd) on a coarser lattice: the evidence and the spreads against the brute-force grid', {
+    timeout: 180_000,
+  }, () => {
     const ref = reference([{ mean: 0, sd: 0.5 }, { mean: 0, sd: 0.5 }, { mean: 0, sd: 0.5 }, NOISE_PRIOR], 21, (u) =>
       gpPosteriorGivenHyperparameters(X2, Y2, {
         lengthScale: [Math.exp(u[0] ?? 0), Math.exp(u[1] ?? 0)],

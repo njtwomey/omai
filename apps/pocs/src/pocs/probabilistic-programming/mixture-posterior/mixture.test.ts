@@ -25,11 +25,20 @@ describe('the data', () => {
 
 describe('the methods on offer', () => {
   const results = new Map<string, MixtureResult>()
+  // The budget is wall-clock time. The diagnostics below need Gibbs to have made its warm-up (100 sweeps) and a few draws per chain,
+  // which takes about a second here and was not reached in 2.5 s on the CI runner, so Gibbs gets four times the budget.
   for (const m of METHODS)
     it(`${m.label} runs on the unordered and the ordered mixture and returns draws with times`, async () => {
       for (const ordered of [false, true]) {
         const r = await runMixture(
-          { method: jobId(m.kind, ordered), kind: m.kind, ordered, components: 2, budgetMs: 2500, seed: 1 },
+          {
+            method: jobId(m.kind, ordered),
+            kind: m.kind,
+            ordered,
+            components: 2,
+            budgetMs: m.kind === 'gibbs' ? 10_000 : 2500,
+            seed: 1,
+          },
           host(),
         )
         results.set(jobId(m.kind, ordered), r)
@@ -46,7 +55,7 @@ describe('the methods on offer', () => {
         if (m.organisation === 'chain') expect(r.chains).toBeGreaterThanOrEqual(2)
         else expect(r.frames.length).toBeGreaterThan(1)
       }
-    }, 20000)
+    }, 60_000)
 
   it('the draws of a sampler appear over time and stay; a fit is shown one snapshot at a time', () => {
     const gibbs = results.get('gibbs-free') as MixtureResult
