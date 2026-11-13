@@ -23,7 +23,7 @@
             "runId": "decision-tree-classifier:0",
             "name": "decision-tree-classifier",
             "seed": 0,
-            "version": "0.1.12",
+            "version": "0.1.13",
             "config": {
               "criterion": "gini",
               "growth": "depth",

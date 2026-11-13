@@ -6,7 +6,7 @@
       "runId": "newton:none",
       "name": "newton",
       "seed": null,
-      "version": "0.1.12",
+      "version": "0.1.13",
       "config": {},
       "channels": {
         "metrics": {
