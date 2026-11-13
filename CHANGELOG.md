@@ -5,10 +5,11 @@ mdml-engine, mdml-render and mdml-meta.
 
 ## 0.1.13
 
-Not yet released on GitHub (no tag has been made and the packages are still 0.1.12): the next GitHub release will cover the
-whole probabilistic-programming increment recorded here, under whichever version number it is given. This section records what
-is on `main` so far; the plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in
-`docs/probprog/results/`.
+Released 2026-11-13. This release covers the whole probabilistic-programming increment: the inference methods, the message-passing
+engine and expectation propagation with its compiler and test suite, the validation tables, the Bayesian trees, and the fixes from two
+review rounds. The plan is `docs/probprog/PLAN.md` (with its status section), the validation tables are in `docs/probprog/results/`,
+and the expectation propagation design is `docs/probprog/ep.md`. The showcase and the proofs of concept (`apps/showcase`, `apps/pocs`)
+are private apps and are not part of the packages.
 
 Bayesian trees (omai-engine, `trees`, new `bayesian/` folder; design in `docs/probprog/bayesian-trees.md`): one tree with a conjugate posterior in every
 leaf (Normal-Gamma, Dirichlet), the exact evidence and prior of a tree, a myopic grower that takes the split with the largest posterior odds one at a time
