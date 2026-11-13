@@ -126,10 +126,10 @@ function sitesAsQuantities(posterior: Pick<Posterior, 'mean' | 'sites'>): readon
  * ```ts
  * import { runEp } from 'omai-engine/probprog/ep'
  * import { defineModel } from 'omai-engine/probprog/model'
- * import * as d from 'omai-engine/probprog/model/dists'
+ * import { normal } from 'omai-engine/probprog/model/dists'
  * const model = defineModel('mean', (m) => {
- *   const mu = m.latent('mu', d.normal(0, 2))
- *   m.observe('y', d.normal(mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
+ *   const mu = m.latent('mu', normal(0, 2))
+ *   m.observe('y', normal(mu, 1), m.data('y', { dims: ['i'], role: 'response' }))
  * })
  * const r = runEp(model.bind({ y: [1.2, 0.4, 1.9] }))
  * r.status === 'ran' ? Object.keys(r.beliefs) : r.status // => ['mu']
