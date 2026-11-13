@@ -54,11 +54,11 @@ What a user of expectation propagation on a model needs, and the suite that test
 - function `beliefCredibleInterval`: The equal-tailed credible interval of an EP belief on its support. `src/lib/probprog/ep/ep-extended.ts:36` `omai-engine/probprog/ep`
 - function `beliefDensity`: The density of a belief from its mean and sd on a support. `src/lib/probprog/ep/ep-atoms.ts:50` `omai-engine/probprog/ep`
 - function `calibrationTable`: The calibration table of an extended EP atom from its seeds: coverage, bias and error per parameter. `src/lib/probprog/ep/ep-extended.ts:202` `omai-engine/probprog/ep`
-- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:59` `omai-engine/probprog/ep`
+- function `epCoverage`: What EP covers today: atoms and benchmark models as runs or planned, with reasons. `src/lib/probprog/ep/ep-coverage.ts:62` `omai-engine/probprog/ep`
 - function `mixtureInterval`: The equal-tailed credible interval of a mixture of Gaussians (a gated coefficient). `src/lib/probprog/ep/ep-recovery.ts:24` `omai-engine/probprog/ep`
 - function `recoverySummary`: How well a posterior recovered the truth: interval coverage, error, agreement with a reference. `src/lib/probprog/ep/ep-recovery.ts:81` `omai-engine/probprog/ep`
 - function `runEp`: Run EP on a bound model: beliefs per sweep, a record, or the refusal. `src/lib/probprog/ep/run.ts:138` `omai-engine/probprog/ep`
-- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:160` `omai-engine/probprog/ep`
+- function `vmpCoverage`: What variational message passing covers today: atoms as runs or planned, with the operators lacking a rule. `src/lib/probprog/ep/ep-coverage.ts:166` `omai-engine/probprog/ep`
 
 - table `epAtoms`: The EP atoms: bare setups of one factor each, with a reference and a tolerance (look one up by name). `src/lib/probprog/ep/ep-atom-list.ts:162` `omai-engine/probprog/ep`
 

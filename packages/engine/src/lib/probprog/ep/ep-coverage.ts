@@ -46,18 +46,23 @@ export interface EpCoverage {
  * What EP covers today: each atom run once at its default knobs, and each benchmark model compiled to a factor graph and
  * asked for the EP verdict (and, when that refuses, the verdict of EP inside a grid over the hyperparameters). A model the compiler throws on counts as planned with the error as its reason (a gap to report).
  *
+ * @param options - `names` restricts the rows to the atoms and benchmark models with those names (a short check, instead of the whole suite).
  * @returns The rows and the counts.
  * @concept expectation-propagation
  * @index function What EP covers today: atoms and benchmark models as runs or planned, with reasons.
  * @example
  * ```ts
  * import { epCoverage } from 'omai-engine/probprog/ep'
- * const c = epCoverage()
- * c.atomsRun > 0 && c.benchmarks.length > 20 // => true
+ * // Three names (the last is an atom and a benchmark model); with no names it covers every atom and model.
+ * const c = epCoverage({ names: ['gaussian', 'gamma-precision', 'beta-bernoulli'] })
+ * const rows = [...c.atoms, ...c.benchmarks]
+ * rows.map((r) => `${r.kind} ${r.name}: ${r.status}`) // => ['atom gamma-precision: runs', 'atom gaussian: runs', 'atom beta-bernoulli: runs', 'benchmark beta-bernoulli: runs']
  * ```
  */
-export function epCoverage(): EpCoverage {
-  const atoms = epAtoms.map((a): CoverageRow => {
+export function epCoverage(options: { readonly names?: readonly string[] } = {}): EpCoverage {
+  const wanted = (name: string): boolean => options.names === undefined || options.names.includes(name)
+  const chosenAtoms = epAtoms.filter((a) => wanted(a.name))
+  const atoms = chosenAtoms.map((a): CoverageRow => {
     const run = atomRun(a.problem(a.defaults), a.ep ?? {})
     return {
       name: a.name,
@@ -71,7 +76,8 @@ export function epCoverage(): EpCoverage {
       factors: a.factors,
     }
   })
-  const benchmarks = benchmarkModels().map((m): CoverageRow => {
+  const chosenModels = benchmarkModels().filter((m) => wanted(m.name))
+  const benchmarks = chosenModels.map((m): CoverageRow => {
     const base = { name: m.name, title: m.title, kind: 'benchmark' as const, group: m.tags.join(', '), factors: [] }
     if (m.definition === undefined)
       return {
@@ -153,8 +159,8 @@ const VMP_STEADY_KNOBS: Config = { tol: 1e-9, maxSweeps: 1000, damping: 0.7, imp
  * @example
  * ```ts
  * import { vmpCoverage } from 'omai-engine/probprog/ep'
- * const c = vmpCoverage()
- * c.atomsRun > 40 && c.atoms.length > 80 // => true
+ * const c = vmpCoverage({ names: ['gaussian', 'gamma-precision', 'ordered-pair'] })
+ * c.atoms.map((r) => `${r.name}: ${r.status}`) // => ['ordered-pair: planned', 'gamma-precision: runs', 'gaussian: runs']
  * ```
  */
 export function vmpCoverage(

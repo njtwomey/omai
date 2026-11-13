@@ -369,7 +369,8 @@ const mixtureWeightLog =
  * ```ts
  * import { beta, betaEta, messageArg, mixtureWeight } from 'omai-engine/message-passing'
  * const args = [messageArg(beta, betaEta(2, 2))]
- * mixtureWeight.ep?.({ mode: 'ep', to: 0, args, params: { l1: 3, l0: 1 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.543', '0.082']
+ * // The message to the weight, in the beta's natural parameters: the cavity Beta(2, 2) becomes Beta(2.31, 1.90).
+ * mixtureWeight.ep?.({ mode: 'ep', to: 0, args, params: { l1: 3, l0: 1 }, power: 1 }).message.map((v) => v.toFixed(3)) // => ['0.309', '-0.102']
  * ```
  */
 export const mixtureWeight: FactorOperator = defineOperator({

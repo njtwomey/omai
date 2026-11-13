@@ -381,7 +381,8 @@ function resolve(
  * const cavity = (m: number, v: number) => messageArg(gaussian, gaussianEta(m, v))
  * const args = [cavity(0.5, 1), cavity(-1, 1), cavity(1, 1)]
  * const params = { likelihood: 'ordinal-probit-cuts', y: 1, categories: 3 }
- * tripleLikelihoodOperator().tilted?.({ mode: 'ep', to: 0, args, params, power: 1 }).moments.map((v) => v.toFixed(3)) // => ['0.500', '1.250']
+ * // The tilted first and second moments of the predictor: its cavity (mean 0.5) pulled to 0.35 by the middle category.
+ * tripleLikelihoodOperator().tilted?.({ mode: 'ep', to: 0, args, params, power: 1 }).moments.map((v) => v.toFixed(3)) // => ['0.350', '0.822']
  * ```
  */
 export function tripleLikelihoodOperator(

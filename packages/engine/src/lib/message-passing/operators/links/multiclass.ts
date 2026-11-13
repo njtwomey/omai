@@ -176,8 +176,9 @@ function auxiliaryMean(c: OperatorContext): {
  * ```ts
  * import { gaussian, gaussianEta, messageArg, multiclassSite } from 'omai-engine/message-passing'
  * const args = [0, 1, 2].map(() => messageArg(gaussian, gaussianEta(0, 1)))
+ * // The message to the observed class's score, in natural parameters (mean over variance, precision) added to its cavity.
  * const m = multiclassSite.ep?.({ mode: 'ep', to: 0, args, params: { y: 0, classes: 3 }, power: 1 })
- * m?.message.map((v) => v.toFixed(3)) // => ['0.000', '0.000']
+ * m?.message.map((v) => v.toFixed(3)) // => ['0.612', '0.180']
  * ```
  */
 export const multiclassSite: FactorOperator = defineOperator({
