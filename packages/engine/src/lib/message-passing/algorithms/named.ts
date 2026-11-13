@@ -42,8 +42,8 @@ export interface MessagePassingOptions {
   readonly initial?: readonly InitialMessage[]
   /**
    * How many times a run that stalls or diverges is restarted from its start messages with a stronger damping (0.5, then
-   * 0.8, then 0.9, those stronger than the run's own) before it is reported as stalled: a stall is a run whose beliefs stopped
-   * moving because some updates could not be computed (see `mpVerdict`). Each restart is counted on the tape (`mp/restarts`).
+   * more) before it is reported as stalled: a stall is a run whose beliefs stopped moving because some updates could not be
+   * computed (see `mpVerdict`). Each restart is counted on the tape (`mp/restarts`).
    */
   readonly restarts?: number
 }

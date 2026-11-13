@@ -1507,14 +1507,9 @@ use the code were compared with the same items run without the change, and the o
 - **`gate` under VMP** counted a branch whose operator has no `expectedLog` as a log density of 0 and skipped one with no `vmp` rule. `unsupported('vmp')` now names the branch operator (`equal` has a
   message and no expected log, `greater-than` has neither) and the rule and the expected log throw a `ParameterError`; a constant branch is still 0. All 43 digest items with a gate are identical;
   the registry line gains the gate's `unsupported` member.
-- **Restarts.** `restartDamping` was `max(damping, 0.5) + 0.3 (k - 1)`, so a run damped from 0.5 to 0.9 had a first restart as damped as itself and never restarted (`restarts: 3` at damping 0.5 reported a
-  stall without trying). A restart is the k-th of 0.5, 0.8, 0.9 among those stronger than the run's own, and one that would repeat the previous attempt is not made (a run under a half is unchanged,
-  except that its fourth restart, which repeated the third to the last digit, is not made). **Digest items that move:** the four programs that were damped at 0.5 or more and stalled on improper
-  cavities, which used to be reported `converged` with 'a restart would repeat the run': `program/circular-ignore` (25 to 92 sweeps, one restart, the first mean 7.972 to 8.026),
-  `program/sparse-student-t` (49 to 185 sweeps, evidence -98.8674 to -98.8537), `program/circular-data` (138 to 150 sweeps, status converged to stopped at the step budget, unresolved 252 to 279) and
-  `program/circular-means` (37 to 150 sweeps, converged to stopped at the budget, but the evidence is now defined: -236.23, with 43 unresolved updates instead of 149). The restart costs 4 times the sweeps in
-  three of them for stalls that are structural skips of an improper cavity; that is the price of 'always stronger', and the one line that returns the old behaviour is `restartDiffers`. Unchanged:
-  `atom/mixture-regression`, `model/gaussian-mixture-ordered`, `model/radon`, `program/sparse-gaussian`, `sparse-mixture`, `circular-rows`.
+- **Restarts (reverted at `agent-a2477f-gatefix2`, see the last section).** `restartDamping` was `max(damping, 0.5) + 0.3 (k - 1)`, so a run damped from 0.5 to 0.9 had a first restart as damped as
+  itself and never restarted (`restarts: 3` at damping 0.5 reported a stall without trying). This round made a restart the k-th of 0.5, 0.8, 0.9 among those stronger than the run's own, which moved
+  `program/circular-ignore`, `circular-means`, `circular-data` and `sparse-student-t` and broke six circular tests; the old rule is back.
 - **`product`** weighted its grid with `Math.exp(logNormal(...))` and took `Math.log(mass)`: an output message more than about 38 sd from the pushforward underflowed every weight, the mean was NaN and the
   message an `ImproperMessageError` (evidence minus infinity). When the plain mass is not above 1e-250 the same grid is taken with shifted log weights (`shiftedSum`, `tiltedLogGrid`); an ordinary case keeps
   its path and its bits (digest: `product`, `chain-persistence-grid`, `eight-schools`, `funnel`, `radon`, `stochastic-volatility`, `bayesian-neural-network`). Limit: where the underflow means the posterior is
@@ -1612,6 +1607,29 @@ On the other 39 seeds the spreads with the trait are 0.84 to 1.00 of the old one
   after it the phase is far (0.212 and 1.553 off, spreads 1.49 and 4.74); at 3000 sweeps the old code's undamped state was far too (2.86, -2.89). The new variances are the more exact ones, so the
   code stays, and the test uses the scale 0.6 where EP converges (12 sweeps, the same fixed point before and after S5c: errors 0.001 and 0.001, spreads 1.03 and 1.08 of the exact), with bounds 0.01 and 0.95 to 1.15
   (they were 0.12 and 0.75 to 1.3). That EP does not converge on the harder mixture is the multimodal gap's, not a regression.
+
+## 2026-11-13 Gate fixes: the restart skip-ahead reverted, a GPLVM test that pinned the old route (`agent-a2477f-gatefix2`)
+
+The second full EP check had seven failures, all new since the first, all from merges made after it.
+- **Restart skip-ahead (six tests of `ep-programs-circular.test.ts`; first failing commit `dddd4210`, merged in `b3229c31`).** A run damped by 0.5 that stalls (its beliefs stopped moving with
+  some updates not computable, which for these programs is the converged state: 150 to 1000 skipped improper cavities) was reported `converged` and kept its answer; since `dddd4210` it restarts from
+  the start messages at damping 0.8. The restart does not resolve those updates (215 to 980 still unresolved after it) and it lands elsewhere. Measured on the programs' own settings (damping 0.5,
+  tolerance 1e-4, 150 sweeps, one restart, 200 readings, seeds as the tests use them), recovered means and sd against the truth (23 h, sd 3 for one component; 22 h and 9 h, sd about 2.3 for two):
+  with the old rule 10 of the 11 fits recover the truth (one normal 22.6 to 23.0 h, sd 2.93 to 3.06, all converged in 36 to 100 sweeps; two normals, means 8.4 to 8.9 and 21.6 to 21.9, sd 1.86 to 2.19,
+  converged in 40 to 90 sweeps) and the eleventh is the pinned limit (two normals, data form, seed 2: one component at 11.1 h, sd 5.18, held-out loss 0.684); with the skip-ahead 7 of the 11 do, and 4 do not:
+  `one`/data seed 1 ends at 18.1 h with sd 24.5 (loss 0.832), seed 2 at 21.77 h (gap 1.2 h against a bound of 0.6), `two`/means seed 1 at 10.05 and 13.81 h with sd 6.78 (loss 0.409) and seed 3 at
+  12.61 and 16.31 h with sd 8.93 (loss 0.305); and all the fits of the two-normal data form and of `one`/data end at the 150 sweep budget (status `completed`, not `converged`), though three recover. A budget of 400 does not mend it: `one`/data seed 1 then
+  converges, at sweep 211, to the same wrong mode (17.8 h, sd 25.0); `two`/means seeds 1 and 3 still end in 9.17 and 19.52 h (weights 0.98, 0.02, sd 4.14) and 13.04 and 15.95 h (sd 6.79), at sweeps 240 and 256 without converging. The
+  skip-ahead recovers `two`/data seed 2 (loss 0.069, 0.037 at 400 sweeps), the pinned 'known limit', but by a slower damped path that fails elsewhere, so it is not a flip of that test. Code,
+  then, not test: `dddd4210` and its docs line (`3aaac0f5`) are reverted, a restart is `max(damping, 0.5) + 0.3 (k - 1)` again and a run damped by a half or more is not restarted (its verdict
+  says so). Digest: `program/circular-data` (back to 138 sweeps, converged, 252 unresolved, `copy` and `z` beliefs of the old run), `circular-means` (37 sweeps, converged, 149 unresolved, evidence
+  undefined), `circular-ignore` (25 sweeps, no restart, first mean 7.972) and `sparse-student-t` (49 sweeps, evidence -98.8674) are the lines they had before `dddd4210`, merged by
+  hand from `make ep-digest ARGS="--only program/circular,program/sparse-student-t"` (`circular-rows` unchanged; `exact.coverage` is each item's committed one). A restart that moves a stalled run
+  damped by a half or more is a design question for when the programs have a budget for it; the measured effect on these programs is that it makes them worse.
+- **`network-layers.test.ts` (GPLVM is not a layer; first failing commit `7604d29e`, the `gplvm-row` merge).** The test counted 20 `apply` factors in the compiled graph of the Fourier-feature
+  GPLVM with `packScalars: true`; since `7604d29e` that graph has five `gplvm-row` factors and no `apply`, so the premise of the count changed and `networkLayerUnits` is still 0 (the code is right:
+  a GPLVM is not mistaken for a layer in either route). The test now checks both routes: unpacked (the registry's `apply`, `product`, `sum`: 20 `apply`, 0 layer units) and packed (5
+  `gplvm-row`, 0 `apply`, 0 layer units).
 
 ## 2026-11-12 The hand-written EP documents brought up to date (`agent-afa81a-docspass`)
 
